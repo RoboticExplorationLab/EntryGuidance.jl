@@ -2,3 +2,8 @@ name = "EntryGuidance"
 uuid = "19d74fbd-e8fe-4973-b52e-c4f98f2c58aa"
 authors = ["Zac Manchester <zacm@stanford.edu>"]
 version = "0.1.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
+ECOS = "e2685f51-7e38-5353-a97d-a921fd2c8199"
