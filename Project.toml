@@ -1,0 +1,4 @@
+name = "EntryGuidance"
+uuid = "19d74fbd-e8fe-4973-b52e-c4f98f2c58aa"
+authors = ["Zac Manchester <zacm@stanford.edu>"]
+version = "0.1.0"
