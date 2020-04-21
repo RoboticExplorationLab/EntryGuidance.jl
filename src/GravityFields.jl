@@ -1,9 +1,9 @@
 abstract type AbstractGravityField{T} end
 
-# function EarthGravity()
-#     #Units are Kg, Km, s
-#     SphericalGravityField{Float64}(398600.4418)
-# end
+function EarthGravity()
+    #Units are Kg, Km, s
+    SphericalGravityField{Float64}(398600.4418)
+end
 
 function MarsGravity()
     #Units are Kg, Km, s
