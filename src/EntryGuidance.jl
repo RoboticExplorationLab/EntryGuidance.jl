@@ -1,5 +1,8 @@
 module EntryGuidance
 
-greet() = print("Hello World!")
+export SphericalGravityField, J2GravityField
+export ExponentialAtmosphere, density
+
+include("PlanetModels.jl")
 
 end # module
