@@ -3,7 +3,7 @@ abstract type AbstractAtmosphere{T} end
 function EarthExponentialAtmosphere()
     #Units are Kg, Km, s
     #https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html
-    ExponentialAtmosphere{FLoat64}(6378.1, 8.5, 1.217e9)
+    ExponentialAtmosphere{Float64}(6378.1, 8.5, 1.217e9)
 end
 
 function MarsExponentialAtmosphere()

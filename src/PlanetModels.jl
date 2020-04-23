@@ -29,6 +29,6 @@ function atmospheric_density(p::PlanetModel{T}, r::T) where {T}
     atmospheric_density(p.atmosphere, r)
 end
 
-function gravitation_acceleration(p::PlanetModel{T}, r::AbstractArray{T}) where {T}
-    gravitation_acceleration(p.gravity, r)
+function gravitational_acceleration(p::PlanetModel{T}, r::AbstractArray{T}) where {T}
+    gravitational_acceleration(p.gravity, r)
 end
