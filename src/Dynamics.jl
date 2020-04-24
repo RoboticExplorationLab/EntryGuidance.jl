@@ -1,4 +1,4 @@
-function vinh_dynamics(x,u,p::PlanetModel)
+function vinh_dynamics(x::AbstractArray{T},u::AbstractArray{T},p::PlanetModel{T}) where {T}
     #Taken from pages 2-11 to 2-12 of Hypersonic Flight Mechanics by Busemann, Vinh, and Culp
     #https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19760024112.pdf
 
@@ -18,7 +18,7 @@ function vinh_dynamics(x,u,p::PlanetModel)
     #get gravity (assumed spherical for now)
     g = norm(gravitational_acceleration(p, [r,0.0,0.0]))
 
-    #Terms involving Ω (planet rotation) are often thrown out.
+    #Terms involving Ω (planet rotation) are often thrown out in the literature.
     Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
 
     ṙ = v*sin(γ)
@@ -32,14 +32,59 @@ function vinh_dynamics(x,u,p::PlanetModel)
     ẋ = [ṙ, θ̇, ϕ̇, v̇, γ̇, ψ̇]
 end
 
-function cartesian_dynamics(x,u)
+function cartesian_dynamics(x::AbstractArray{T},u::AbstractArray{T},p::PlanetModel{T}) where {T}
 
+    #unpack state vector
+    r = x[1:3]
+    v = x[4:6]
+
+    #unpack control vector
+    D = u[1] #Drag acceleration magnitude
+    L = u[2] #Lift acceleration magnitude
+    σ = u[3] #Bank angle (specifies lift direction)
+
+    #get gravity
+    g = gravitational_acceleration(p, r)
+
+    #Terms involving Ω (planet rotation) are often thrown out in the literature.
+    Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω̂ = hat(Ω)
+
+    #Aerodynamic acceleration
+    #Bank angle is computed relative to "vertical" (r, v) plane.
+    #Positive σ rotates lift vector around v in right-hand sense towards r×v
+    e1 = cross(r,v)
+    e1 = e1./norm(e1)
+    e2 = cross(e1,v)
+    e2 = e2./norm(e2)
+    a = -(D/norm(v)).*v + L*sin(σ)*e1 + L*cos(σ)*e2
+
+    v̇ = a + g - 2*Ω̂*v - Ω̂*Ω̂*r
+
+    ẋ = [v; v̇]
 end
 
-function quasilinear_dynamics(x,u)
+function bilinear_dynamics(x::AbstractArray{T},u::AbstractArray{T},w::AbstractArray{T},p::PlanetModel{T}) where {T}
 
+    #unpack state vector
+    r = x[1:3]
+    v = x[4:6]
+
+    #unpack parameter vector
+    r0 = w[1]
+    v0 = w[2]
+    g0 = w[3]
+    D0 = w[4]
+
+    #Terms involving Ω (planet rotation) are often thrown out in the literature.
+    Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω̂ = hat(Ω)
+
+    #Bilinear dynamics model
+    kg = g0/r0 #equivalent spring for gravity
+    kd = D0/v0 #equivalent viscous damper for drag
+    A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -kd*I-2*Ω̂]
+    B = [zeros(3,3); hat(v)] #bilinear term v×u
+
+    ẋ = A*x + B*u
 end
-
-# function full_dynamics(x,u)
-#
-# end
