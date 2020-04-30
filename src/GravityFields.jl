@@ -1,7 +1,7 @@
 abstract type AbstractGravityField{T} end
 
 function EarthGravity()
-    #Units are Kg, Km, s
+    #Units are Kg, Km, s (mu has units of km^3/sec^2)
     SphericalGravityField{Float64}(398600.4418)
 end
 
@@ -30,12 +30,12 @@ struct J2GravityField{T} <: AbstractGravityField{T}
     J2::T #dimensionless J2 coefficient
 end
 
-function gravitational_acceleration(g::SphericalGravityField{T}, r::AbstractArray{T}) where {T}
+function gravitational_acceleration(r::AbstractVector{T}, g::SphericalGravityField{T}) where {T}
     R = norm(r)
     a = (-g.μ/(R*R*R)).*r
 end
 
-function gravitational_acceleration(g::J2GravityField{T}, r::AbstractArray{T}) where {T}
+function gravitational_acceleration(r::AbstractVector{T}, g::J2GravityField{T}) where {T}
     R = norm(r)
     R3 = R^3
     R7 = R^7

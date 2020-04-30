@@ -18,11 +18,11 @@ struct ExponentialAtmosphere{T} <: AbstractAtmosphere{T}
     ρ0::T #surface density (M/L^3)
 end
 
-function atmospheric_density(a::ExponentialAtmosphere{T}, r::AbstractArray{T}) where {T}
+function atmospheric_density(r::AbstractVector{T}, a::ExponentialAtmosphere{T}) where {T}
     R = norm(r)
     ρ = a.ρ0*exp(-(R-a.r0)/a.H)
 end
 
-function atmospheric_density(a::ExponentialAtmosphere{T}, r::T) where {T}
+function atmospheric_density(r::T, a::ExponentialAtmosphere{T}) where {T}
     ρ = a.ρ0*exp(-(r-a.r0)/a.H)
 end

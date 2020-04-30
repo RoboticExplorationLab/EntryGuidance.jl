@@ -4,31 +4,31 @@ function hat(x)
          -x[2] x[1] 0]
 end
 
-function planet_fixed_to_inertial(p::PlanetModel,t,x)
+function planet_fixed_to_inertial(t::T,x::AbstractVector{T},p::PlanetModel{T}) where {T}
     #Assume axes are aligned at t=0
     ω̂ = hat([0, 0, p.Ω])
     R = exp(t*ω̂)
     xn = [R*x[1:3]; R*(x[4:6] + ω̂*x[1:3])]
 end
 
-function planet_fixed_to_inertial(p::PlanetModel,x)
+function planet_fixed_to_inertial(x::AbstractVector{T},p::PlanetModel{T}) where {T}
     #Assume axes are aligned
-    planet_fixed_to_inertial(p,0.0,x)
+    planet_fixed_to_inertial(0.0,x,p)
 end
 
-function inertial_to_planet_fixed(p::PlanetModel,t,x)
+function inertial_to_planet_fixed(t::T,x::AbstractVector{T},p::PlanetModel{T}) where {T}
     #Assume axes are aligned at t=0
     ω̂ = hat([0, 0, p.Ω])
     R = exp(-t*ω̂)
     xp = [R*x[1:3]; R*(x[4:6] - ω̂*x[1:3])]
 end
 
-function inertial_to_planet_fixed(p::PlanetModel,x)
+function inertial_to_planet_fixed(x::AbstractVector{T},p::PlanetModel{T}) where {T}
     #Assume axes are aligned
-    inertial_to_planet_fixed(p,0.0,x)
+    inertial_to_planet_fixed(0.0,x,p)
 end
 
-function cartesian_to_vinh(x)
+function cartesian_to_vinh(x::AbstractVector{T}) where {T}
     r = norm(x[1:3])
     θ = atan(x[2], x[1]) #longitude (defined starting from x-axis in equatorial plane)
     ϕ = asin(x[3]/r) #latitude (defined up from equatoria plane)
@@ -56,7 +56,7 @@ function cartesian_to_vinh(x)
     x_vinh = [r, θ, ϕ, v, γ, ψ]
 end
 
-function vinh_to_cartesian(x)
+function vinh_to_cartesian(x::AbstractVector{T}) where{T}
     #unpack state vector
     r = x[1]
     θ = x[2] #longitude
