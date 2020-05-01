@@ -3,7 +3,8 @@ using LinearAlgebra
 function vinh_no_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
     #Open-loop with L=0
 
-    #grab velocity magnitude from state
+    #unpack state
+    r = x[1]
     v = x[4]
 
     #Assume spherically symmetric atmosphere

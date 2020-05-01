@@ -1,6 +1,6 @@
+#Units are L=km M=kg T=hours
 
 function SimpleSphereConeVehicle()
-    #kg, km^2
     s = VehicleModel{Float64}(600.0, π*1.7e-3*1.7e-3)
 end
 

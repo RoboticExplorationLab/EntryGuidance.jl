@@ -1,33 +1,31 @@
+#Units are L=km M=kg T=hours
+
 abstract type AbstractGravityField{T} end
-
-function EarthGravity()
-    #Units are Kg, Km, s (mu has units of km^3/sec^2)
-    SphericalGravityField{Float64}(398600.4418)
-end
-
-function MarsGravity()
-    #Units are Kg, Km, s
-    SphericalGravityField{Float64}(42828.37)
-end
-
-function EarthGravityJ2()
-    #Units are Kg, Km, s
-    J2GravityField{FLoat64}(398600.4415, 6378.1363, 0.1082635854e-2)
-end
-
-function MarsGravityJ2()
-    #Units are Kg, Km, s
-    J2GravityField{Float64}(42828.37, 3396.0, 0.196045e-2)
-end
 
 struct SphericalGravityField{T} <: AbstractGravityField{T}
     μ::T #standard gravitational parameter
 end
 
 struct J2GravityField{T} <: AbstractGravityField{T}
-    μ::T #standard gravitational parameter ()
+    μ::T #standard gravitational parameter (L^3/T^2)
     R::T #planet radius (L)
-    J2::T #dimensionless J2 coefficient
+    J2::T #J2 coefficient (dimensionless)
+end
+
+function EarthGravity()
+    SphericalGravityField{Float64}(398600.4418*(3600.0^2))
+end
+
+function MarsGravity()
+    SphericalGravityField{Float64}(42828.37*(3600.0^2))
+end
+
+function EarthGravityJ2()
+    J2GravityField{FLoat64}(398600.4415*(3600.0^2), 6378.1363, 0.1082635854e-2)
+end
+
+function MarsGravityJ2()
+    J2GravityField{Float64}(42828.37*(3600.0^2), 3396.203986, 0.196045e-2)
 end
 
 function gravitational_acceleration(r::AbstractVector{T}, g::SphericalGravityField{T}) where {T}

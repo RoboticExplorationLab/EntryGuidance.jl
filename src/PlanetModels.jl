@@ -1,23 +1,24 @@
+#Units are L=km M=kg T=hours
 
 function EarthPlanetModel()
-    p = PlanetModel{Float64}(6378.1, 7.292115e-5, EarthGravity(), EarthExponentialAtmosphere())
+    p = PlanetModel{Float64}(6378.1, 7.292115e-5*3600.0, EarthGravity(), EarthExponentialAtmosphere())
 end
 
 function EarthPlanetModelJ2()
-    p = PlanetModel{Float64}(6378.1, 7.292115e-5, EarthGravityJ2(), EarthExponentialAtmosphere())
+    p = PlanetModel{Float64}(6378.1, 7.292115e-5*3600.0, EarthGravityJ2(), EarthExponentialAtmosphere())
 end
 
 function MarsPlanetModel()
-    p = PlanetModel{Float64}(3396.2, 7.08824e-5, MarsGravity(), MarsExponentialAtmosphere())
+    p = PlanetModel{Float64}(3396.2, 7.08824e-5*3600.0, MarsGravity(), MarsExponentialAtmosphere())
 end
 
 function MarsPlanetModelJ2()
-    p = PlanetModel{Float64}(3396.2, 7.08824e-5, MarsaGravityJ2(), MarsExponentialAtmosphere())
+    p = PlanetModel{Float64}(3396.2, 7.08824e-5*3600.0, MarsaGravityJ2(), MarsExponentialAtmosphere())
 end
 
 struct PlanetModel{T}
     R::T #radius
-    Ω::T #rotation rate (rad/sec)
+    Ω::T #rotation rate (rad/T)
     gravity::AbstractGravityField{T}
     atmosphere::AbstractAtmosphere{T}
 end
