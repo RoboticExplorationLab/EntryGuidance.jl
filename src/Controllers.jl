@@ -1,6 +1,6 @@
 using LinearAlgebra
 
-function vinh_fixed_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+function vinh_test_controller(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
     #Open-loop with L=0
 
     #unpack state
@@ -24,7 +24,7 @@ function vinh_fixed_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{
     u = [D,L,σ]
 end
 
-function cartesian_fixed_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+function cartesian_test_controller(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
     #Open-loop with L=0
 
     #unpack state
@@ -47,4 +47,8 @@ function cartesian_fixed_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetM
     σ = π/4
 
     u = [D,L,σ]
+end
+
+function bilinear_test_controller(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+
 end

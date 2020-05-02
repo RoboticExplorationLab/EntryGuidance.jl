@@ -1,12 +1,12 @@
 #Units are L=km M=kg T=hours
 
-function SimpleSphereConeVehicle()
-    s = VehicleModel{Float64}(600.0, π*1.7e-3*1.7e-3)
-end
-
 struct VehicleModel{T}
     m::T #mass
     A::T #area
+end
+
+function SimpleSphereConeVehicle()
+    s = VehicleModel{Float64}(600.0, π*1.7e-3*1.7e-3)
 end
 
 function drag_coefficient(s::VehicleModel)
