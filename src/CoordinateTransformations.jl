@@ -39,7 +39,7 @@ function cartesian_to_vinh(x::AbstractVector{T}) where {T}
     #See pages 2-5 and 2-6 of Hypersonic Flight Mechanics by Busemann, Vinh, and Culp
     #https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19760024112.pdf
     e1 = x[1:3]./r
-    e2 = cross(e1,[0,0,1.0])
+    e2 = cross([0,0,1.0],e1)
     e2 = e2./norm(e2)
     e3 = cross(e1,e2)
 
@@ -50,7 +50,7 @@ function cartesian_to_vinh(x::AbstractVector{T}) where {T}
     #(plane perpendicular to r) measured positive when v rotates toward r (out)
     γ = asin(v_lvlh[1]/v)
 
-    #heading is angle between v projected into horizontal plane and y_lvlh
+    #heading is angle between v projected into horizontal plane and y axis of LVLH frame
     ψ = atan(v_lvlh[3],v_lvlh[2])
 
     x_vinh = [r, θ, ϕ, v, γ, ψ]
@@ -83,7 +83,7 @@ function vinh_to_cartesian(x::AbstractVector{T}) where{T}
 
     #Rotate velocity into planet-fixed frame
     e1 = r_cart./r
-    e2 = cross(e1,[0,0,1.0])
+    e2 = cross([0,0,1.0],e1)
     e2 = e2./norm(e2)
     e3 = cross(e1,e2)
     v_cart = [e1 e2 e3]*v_lvlh

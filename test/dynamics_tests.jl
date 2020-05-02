@@ -32,7 +32,7 @@ soln1 = solve(prob1, Tsit5(), reltol=1e-9, abstol=1e-9)
 x0_vinh = cartesian_to_vinh(x0_cart)
 
 prob2 = ODEProblem(closed_loop_dynamics2!,x0_vinh,tspan,params)
-soln2 = solve(prob2, Tsit5(), reltol=1e-14, abstol=1e-14)
+soln2 = solve(prob2, Tsit5(), reltol=1e-9, abstol=1e-9)
 
 tsteps = LinRange(tspan[1],tspan[2],100)
 x_1 = zeros(6,100)
@@ -46,6 +46,6 @@ for k = 1:100
     x_4[:,k] = soln2(tsteps[k])
 end
 
-using Plots
-plotlyjs()
-plot(soln,vars=(1,2))
+# using Plots
+# plotlyjs()
+# plot(soln,vars=(1,2))
