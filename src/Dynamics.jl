@@ -52,10 +52,11 @@ function cartesian_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::Abst
 
     #Aerodynamic acceleration
     #Bank angle is computed relative to "vertical" (r, v) plane.
+    #σ=0 corresponds to lift poining in the "near radial" direction
     #Positive σ rotates lift vector around v in right-hand sense towards r×v
     e1 = cross(r,v)
     e1 = e1./norm(e1)
-    e2 = cross(e1,v)
+    e2 = cross(v,e1)
     e2 = e2./norm(e2)
     a = -(D/norm(v)).*v + L*sin(σ)*e1 + L*cos(σ)*e2
 

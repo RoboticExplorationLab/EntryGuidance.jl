@@ -1,6 +1,6 @@
 using LinearAlgebra
 
-function vinh_no_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+function vinh_fixed_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
     #Open-loop with L=0
 
     #unpack state
@@ -16,10 +16,15 @@ function vinh_no_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T})
     m = s.m
     D = 0.5*Cd*ρ*A*v*v/m
 
-    u = [D,0,0]
+    #Calculate lift acceleration
+    Cl = lift_coefficient(s)
+    L = 0.5*Cl*ρ*A*v*v/m
+    σ = π/4
+
+    u = [D,L,σ]
 end
 
-function cartesian_no_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+function cartesian_fixed_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
     #Open-loop with L=0
 
     #unpack state
@@ -36,5 +41,10 @@ function cartesian_no_lift(x::AbstractVector{T},s::VehicleModel{T},p::PlanetMode
     m = s.m
     D = 0.5*Cd*ρ*A*V*V/m
 
-    u = [D,0,0]
+    #Calculate lift acceleration
+    Cl = lift_coefficient(s)
+    L = 0.5*Cl*ρ*A*V*V/m
+    σ = π/4
+
+    u = [D,L,σ]
 end

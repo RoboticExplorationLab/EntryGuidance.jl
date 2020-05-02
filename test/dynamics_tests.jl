@@ -5,13 +5,13 @@ using Test
 
 function closed_loop_dynamics1!(dx,x,params,t)
     vehicle, planet = params
-    u = cartesian_no_lift(x,vehicle,planet)
+    u = cartesian_fixed_lift(x,vehicle,planet)
     cartesian_dynamics!(dx,x,u,planet)
 end
 
 function closed_loop_dynamics2!(dx,x,params,t)
     vehicle, planet = params
-    u = vinh_no_lift(x,vehicle,planet)
+    u = vinh_fixed_lift(x,vehicle,planet)
     vinh_dynamics!(dx,x,u,planet)
 end
 
