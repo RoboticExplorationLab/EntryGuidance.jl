@@ -1,7 +1,7 @@
 using LinearAlgebra
-#using Test
 using DifferentialEquations
 using EntryGuidance
+using Test
 
 function closed_loop_dynamics1!(dx,x,params,t)
     vehicle, planet = params
@@ -21,7 +21,7 @@ vehicle = SimpleSphereConeVehicle()
 params = (vehicle, planet)
 μ = planet.gravity.μ
 Re = planet.R
-r0 = [Re+200.0, 0, 0] + 10*randn(3)
+r0 = [Re+180.0, 0, 0] + 10*randn(3)
 v0 = [0, sqrt(μ/norm(r0)), 0] + 10*randn(3)
 x0_cart = inertial_to_planet_fixed([r0; v0], planet)
 tspan = (0.0, 1.5)
@@ -32,20 +32,21 @@ soln1 = solve(prob1, Tsit5(), reltol=1e-9, abstol=1e-9)
 x0_vinh = cartesian_to_vinh(x0_cart)
 
 prob2 = ODEProblem(closed_loop_dynamics2!,x0_vinh,tspan,params)
-soln2 = solve(prob2, Tsit5(), reltol=1e-9, abstol=1e-9)
+soln2 = solve(prob2, Tsit5(), reltol=1e-12, abstol=1e-12)
 
-tsteps = LinRange(tspan[1],tspan[2],100)
-x_1 = zeros(6,100)
-x_2 = zeros(6,100)
-x_3 = zeros(6,100)
-x_4 = zeros(6,100)
-for k = 1:100
-    x_2[:,k] = vinh_to_cartesian(soln2(tsteps[k]))
+#Take 10 samples along trajectory
+tsteps = LinRange(tspan[1],tspan[2],10)
+x_1 = zeros(6,10)
+x_2 = zeros(6,10)
+x_3 = zeros(6,10)
+x_4 = zeros(6,10)
+for k = 1:10
     x_1[:,k] = soln1(tsteps[k])
+    x_2[:,k] = vinh_to_cartesian(soln2(tsteps[k]))
     x_3[:,k] = cartesian_to_vinh(soln1(tsteps[k]))
     x_4[:,k] = soln2(tsteps[k])
 end
 
-# using Plots
-# plotlyjs()
-# plot(soln,vars=(1,2))
+@test x_1≈x_2 atol=1e-4
+@test x_3[[1,4],:]≈x_4[[1,4],:] atol=1e-4
+@test mod.(x_3[[2,3,5,6],:],2π)≈mod.(x_4[[2,3,5,6],:],2π) atol=1e-4
