@@ -6,8 +6,8 @@ export EarthGravity, EarthGravityJ2, MarsGravity, MarsGravityJ2
 export gravitational_acceleration
 
 include("Atmospheres.jl")
-export AbstractAtmosphere, ExponentialAtmosphere
-export EarthExponentialAtmosphere, MarsExponentialAtmosphere
+export AbstractAtmosphere, ExponentialAtmosphere, BiExponentialAtmosphere
+export EarthExponentialAtmosphere, MarsExponentialAtmosphere, MarsBiExponentialAtmosphere
 export atmospheric_density
 
 include("PlanetModels.jl")

@@ -91,7 +91,7 @@ function quasilinear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::Ab
     v = x[4:6]
 
     #calculate gravity term
-    kg = norm(gravitational_acceleration(r,p))/norm(r) (equivalent spring force for gravity - assumes variations in g and r are small)
+    kg = norm(gravitational_acceleration(r,p))/norm(r) #equivalent spring force for gravity - assumes variations in g and r are small
 
     #Terms involving Ω (planet rotation) are often thrown out in the literature.
     Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
@@ -101,4 +101,57 @@ function quasilinear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::Ab
     B = [zeros(3,3); I]
 
     ẋ .= A*x + B*u
+end
+
+function vinh_bank_angle_input(u::AbstractVector{T},x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+
+    #unpack control
+    α = u[1] #angle of attack
+    σ = u[2] #bank angle
+
+    #unpack state
+    r = x[1]
+    v = x[4]
+
+    #Assume spherically symmetric atmosphere
+    ρ = atmospheric_density([r,0,0], p)
+
+    #Calculate drag acceleration
+    Cd = drag_coefficient(α, s)
+    A = s.A
+    m = s.m
+    D = 0.5*Cd*ρ*A*v*v/m
+
+    #Calculate lift acceleration
+    Cl = lift_coefficient(α, s)
+    L = 0.5*Cl*ρ*A*v*v/m
+
+    a = [D,L,σ]
+end
+
+function cartesian_bank_angle_input(u::AbstractVector{T},x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+
+    #unpack control
+    α = u[1] #angle of attack
+    σ = u[2] #bank angle
+
+    #unpack state
+    r = x[1:3]
+    v = x[4:6]
+    V = norm(v)
+
+    #atmospheric density
+    ρ = atmospheric_density(r, p)
+
+    #Calculate drag acceleration
+    Cd = drag_coefficient(α, s)
+    A = s.A
+    m = s.m
+    D = 0.5*Cd*ρ*A*V*V/m
+
+    #Calculate lift acceleration
+    Cl = lift_coefficient(α, s)
+    L = 0.5*Cl*ρ*A*V*V/m
+
+    a = [D,L,σ]
 end
