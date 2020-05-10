@@ -1,32 +1,26 @@
 #Units are L=km M=kg T=hours
 
 struct VehicleModel{T}
-    m::T #mass
-    A::T #area
+    m::T #mass (M)
+    A::T #area (L^2)
+    Cd0::T #drag at zero angle of attack
+    Cd2::T #quadratic drag coefficient
+    Cl1::T #linear lift coefficient
 end
 
-function SimpleSphereConeVehicle()
-    s = VehicleModel{Float64}(600.0, π*1.7e-3*1.7e-3)
+function SphereConeVehicle()
+    #Mass and area are from MSL
+    #Aerp coefficients are valid for a hypersonic 70 deg. sphere-cone
+    #From Gallais, "Atmospheric Re-Entry Vehicle Mechanics," p.82-83
+    s = VehicleModel{Float64}(2401.0, π*2.25e-3*2.25e-3, 1.65, -2.77, 1.42)
 end
 
 function drag_coefficient(α::Number, s::VehicleModel)
-    #This is valid for a 70 deg. sphere-cone above about Mach 8
-    #From Gallais, "Atmospheric Re-Entry Vehicle Mechanics," p.82
-    Cd = 1.65 - 2.77*α*α
+    #Quadratic in angle of attack (valid up to ~10 deg.)
+    Cd = s.Cd0 - s.Cd2*α*α
 end
 
 function lift_coefficient(α::Number, s::VehicleModel)
-    #This is valid for a 70 deg. sphere-cone over a wide Mach range
-    #From Gallais, "Atmospheric Re-Entry Vehicle Mechanics," p.83
-    Cl = 1.42*α
-end
-
-function drag_coefficient(s::VehicleModel)
-    #This is super dumb for now
-    Cd = 1.6
-end
-
-function lift_coefficient(s::VehicleModel)
-    #This is super dumb for now
-    Cl = 0.2
+    #Linear in angle of attack (valid up to ~10 deg.)
+    Cl = s.Cl1*α
 end

@@ -3,19 +3,19 @@ using DifferentialEquations
 using EntryGuidance
 using Test
 
-function closed_loop_dynamics1!(dx,x,params,t)
+function open_loop_dynamics1!(dx,x,params,t)
     vehicle, planet = params
     u = cartesian_test_controller(x,vehicle,planet)
     cartesian_dynamics!(dx,x,u,planet)
 end
 
-function closed_loop_dynamics2!(dx,x,params,t)
+function open_loop_dynamics2!(dx,x,params,t)
     vehicle, planet = params
     u = vinh_test_controller(x,vehicle,planet)
     vinh_dynamics!(dx,x,u,planet)
 end
 
-function closed_loop_dynamics3!(dx,x,params,t)
+function open_loop_dynamics3!(dx,x,params,t)
     vehicle, planet, y = params
     u = linear_test_controller(x,vehicle,planet)
     linear_dynamics!(dx,x,u,y,planet)
@@ -23,7 +23,7 @@ end
 
 #Initial conditions for a low-Earth orbit
 planet = EarthPlanetModel()
-vehicle = SimpleSphereConeVehicle()
+vehicle = SphereConeVehicle()
 μ = planet.gravity.μ
 Re = planet.R
 r0 = [Re+200.0, 0, 0] #+ 10*randn(3)
@@ -35,15 +35,15 @@ kg = norm(gravitational_acceleration(r0,planet))/norm(r0)
 y = [kg]
 params = (vehicle, planet, y)
 
-prob1 = ODEProblem(closed_loop_dynamics1!,x0_cart,tspan,params)
+prob1 = ODEProblem(open_loop_dynamics1!,x0_cart,tspan,params)
 soln1 = solve(prob1, Tsit5(), reltol=1e-9, abstol=1e-9)
 
 x0_vinh = cartesian_to_vinh(x0_cart)
 
-prob2 = ODEProblem(closed_loop_dynamics2!,x0_vinh,tspan,params)
+prob2 = ODEProblem(open_loop_dynamics2!,x0_vinh,tspan,params)
 soln2 = solve(prob2, Tsit5(), reltol=1e-12, abstol=1e-12)
 
-prob3 = ODEProblem(closed_loop_dynamics3!,x0_cart,tspan,params)
+prob3 = ODEProblem(open_loop_dynamics3!,x0_cart,tspan,params)
 soln3 = solve(prob3, Tsit5(), reltol=1e-9, abstol=1e-9)
 
 using Plots

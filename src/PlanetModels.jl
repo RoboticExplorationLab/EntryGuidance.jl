@@ -9,11 +9,11 @@ function EarthPlanetModelJ2()
 end
 
 function MarsPlanetModel()
-    p = PlanetModel{Float64}(3396.2, 7.08824e-5*3600.0, MarsGravity(), MarsExponentialAtmosphere())
+    p = PlanetModel{Float64}(3396.2, 7.08824e-5*3600.0, MarsGravity(), MarsBiExponentialAtmosphere())
 end
 
 function MarsPlanetModelJ2()
-    p = PlanetModel{Float64}(3396.2, 7.08824e-5*3600.0, MarsaGravityJ2(), MarsExponentialAtmosphere())
+    p = PlanetModel{Float64}(3396.2, 7.08824e-5*3600.0, MarsaGravityJ2(), MarsBiExponentialAtmosphere())
 end
 
 struct PlanetModel{T}
