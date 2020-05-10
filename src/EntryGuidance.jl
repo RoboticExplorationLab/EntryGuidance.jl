@@ -3,7 +3,7 @@ module EntryGuidance
 include("GravityFields.jl")
 export AbstractGravityField, SphericalGravityField, J2GravityField
 export EarthGravity, EarthGravityJ2, MarsGravity, MarsGravityJ2
-export gravitation_acceleration
+export gravitational_acceleration
 
 include("Atmospheres.jl")
 export AbstractAtmosphere, ExponentialAtmosphere
@@ -23,9 +23,9 @@ include("CoordinateTransformations.jl")
 export planet_fixed_to_inertial, inertial_to_planet_fixed, cartesian_to_vinh, vinh_to_cartesian
 
 include("Dynamics.jl")
-export vinh_dynamics!, cartesian_dynamics!, bilinear_dynamics!
+export vinh_dynamics!, cartesian_dynamics!, linear_dynamics!, quasilinear_dynamics!
 
 include("Controllers.jl")
-export cartesian_test_controller, vinh_test_controller, bilinear_test_controller
+export cartesian_test_controller, vinh_test_controller, linear_test_controller
 
 end # module

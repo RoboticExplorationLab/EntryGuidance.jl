@@ -65,27 +65,40 @@ function cartesian_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::Abst
     ẋ .= [v; v̇]
 end
 
-function bilinear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},y::AbstractVector{T},p::PlanetModel{T}) where {T}
+function linear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},y::AbstractVector{T},p::PlanetModel{T}) where {T}
 
     #unpack state vector
     r = x[1:3]
     v = x[4:6]
 
     #unpack parameter vector
-    r0 = y[1]
-    v0 = y[2]
-    g0 = y[3]
-    D0 = y[4]
+    kg = y[1] # = g0/r0 (equivalent spring force for gravity - assumes variations in g and r are small)
 
     #Terms involving Ω (planet rotation) are often thrown out in the literature.
     Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
     Ω̂ = hat([0, 0, Ω])
 
-    #Bilinear dynamics model
-    kg = g0/r0 #equivalent spring for gravity
-    kd = D0/v0 #equivalent viscous damper for drag
-    A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -kd*I-2*Ω̂]
-    B = [zeros(3,3); hat(v)] #bilinear term v×u
+    A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -2*Ω̂]
+    B = [zeros(3,3); I]
+
+    ẋ .= A*x + B*u
+end
+
+function quasilinear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},p::PlanetModel{T}) where {T}
+
+    #unpack state vector
+    r = x[1:3]
+    v = x[4:6]
+
+    #calculate gravity term
+    kg = norm(gravitational_acceleration(r,p))/norm(r) (equivalent spring force for gravity - assumes variations in g and r are small)
+
+    #Terms involving Ω (planet rotation) are often thrown out in the literature.
+    Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω̂ = hat([0, 0, Ω])
+
+    A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -2*Ω̂]
+    B = [zeros(3,3); I]
 
     ẋ .= A*x + B*u
 end
