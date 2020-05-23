@@ -10,22 +10,27 @@ export AbstractAtmosphere, ExponentialAtmosphere, BiExponentialAtmosphere
 export EarthExponentialAtmosphere, MarsExponentialAtmosphere, MarsBiExponentialAtmosphere
 export atmospheric_density
 
-include("PlanetModels.jl")
-export PlanetModel, EarthPlanetModel, EarthPlanetModelJ2, MarsPlanetModel, MarsPlanetModelJ2
+include("Planets.jl")
+export Planet, Earth, EarthJ2, Mars, MarsJ2
 export gravitational_acceleration, atmospheric_density
 
 include("Vehicles.jl")
-export VehicleModel
-export SphereConeVehicle
+export AbstractVehicle, HypersonicVehicle
+export SimpleMSLVehicle
 export drag_coefficient, lift_coefficient
+
+include("Models.jl")
+export AbstractModel, VinhModel, CartesianModel
+export CartesianMSLModel, CartesianMSLModelJ2, VinhMSLModel, VinhMSLModelJ2
+export drag_coefficient, lift_coefficient, atmospheric_density, gravitational_acceleration
 
 include("CoordinateTransformations.jl")
 export planet_fixed_to_inertial, inertial_to_planet_fixed, cartesian_to_vinh, vinh_to_cartesian
 
 include("Dynamics.jl")
-export vinh_dynamics!, cartesian_dynamics!, linear_dynamics!, quasilinear_dynamics!, vinh_bank_angle_input, cartesian_bank_angle_input
+export dynamics!, angles_input
 
 include("Controllers.jl")
-export cartesian_test_controller, vinh_test_controller, linear_test_controller
+
 
 end # module

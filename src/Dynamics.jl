@@ -1,4 +1,6 @@
-function vinh_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},p::PlanetModel{T}) where {T}
+using LinearAlgebra
+
+function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},m::VinhModel{T}) where {T}
     #Taken from pages 2-11 to 2-12 of Hypersonic Flight Mechanics by Busemann, Vinh, and Culp
     #https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19760024112.pdf
 
@@ -16,10 +18,10 @@ function vinh_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractV
     σ = u[3] #Bank angle (specifies lift direction)
 
     #get gravity (assumed spherical for now)
-    g = norm(gravitational_acceleration([r,0.0,0.0], p))
+    g = norm(gravitational_acceleration([r,0.0,0.0], m))
 
     #Terms involving Ω (planet rotation) are often thrown out in the literature.
-    Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω = m.planet.Ω #Set Ω = 0.0 here if you want that behavior
 
     ṙ = v*sin(γ)
     θ̇ = v*cos(γ)*cos(ψ)/(r*cos(ϕ))
@@ -32,7 +34,7 @@ function vinh_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractV
     ẋ .= [ṙ, θ̇, ϕ̇, v̇, γ̇, ψ̇]
 end
 
-function cartesian_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},p::PlanetModel{T}) where {T}
+function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},m::CartesianModel{T}) where {T}
 
     #unpack state vector
     r = x[1:3]
@@ -44,10 +46,10 @@ function cartesian_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::Abst
     σ = u[3] #Bank angle (specifies lift direction)
 
     #get gravity
-    g = gravitational_acceleration(r, p)
+    g = gravitational_acceleration(r, m)
 
     #Terms involving Ω (planet rotation) are often thrown out in the literature.
-    Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω = m.planet.Ω #Set Ω = 0.0 here if you want that behavior
     Ω̂ = hat([0, 0, Ω])
 
     #Aerodynamic acceleration
@@ -65,45 +67,7 @@ function cartesian_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::Abst
     ẋ .= [v; v̇]
 end
 
-function linear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},y::AbstractVector{T},p::PlanetModel{T}) where {T}
-
-    #unpack state vector
-    r = x[1:3]
-    v = x[4:6]
-
-    #unpack parameter vector
-    kg = y[1] # = g0/r0 (equivalent spring force for gravity - assumes variations in g and r are small)
-
-    #Terms involving Ω (planet rotation) are often thrown out in the literature.
-    Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
-    Ω̂ = hat([0, 0, Ω])
-
-    A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -2*Ω̂]
-    B = [zeros(3,3); I]
-
-    ẋ .= A*x + B*u
-end
-
-function quasilinear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},p::PlanetModel{T}) where {T}
-
-    #unpack state vector
-    r = x[1:3]
-    v = x[4:6]
-
-    #calculate gravity term
-    kg = norm(gravitational_acceleration(r,p))/norm(r) #equivalent spring force for gravity - assumes variations in g and r are small
-
-    #Terms involving Ω (planet rotation) are often thrown out in the literature.
-    Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
-    Ω̂ = hat([0, 0, Ω])
-
-    A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -2*Ω̂]
-    B = [zeros(3,3); I]
-
-    ẋ .= A*x + B*u
-end
-
-function vinh_bank_angle_input(u::AbstractVector{T},x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+function angles_input(u::AbstractVector{T},x::AbstractVector{T},model::VinhModel{T}) where {T}
 
     #unpack control
     α = u[1] #angle of attack
@@ -114,22 +78,22 @@ function vinh_bank_angle_input(u::AbstractVector{T},x::AbstractVector{T},s::Vehi
     v = x[4]
 
     #Assume spherically symmetric atmosphere
-    ρ = atmospheric_density([r,0,0], p)
+    ρ = atmospheric_density([r,0,0], model)
 
     #Calculate drag acceleration
-    Cd = drag_coefficient(α, s)
-    A = s.A
-    m = s.m
+    Cd = drag_coefficient(α, model)
+    A = model.vehicle.A
+    m = model.vehicle.m
     D = 0.5*Cd*ρ*A*v*v/m
 
     #Calculate lift acceleration
-    Cl = lift_coefficient(α, s)
+    Cl = lift_coefficient(α, model)
     L = 0.5*Cl*ρ*A*v*v/m
 
     a = [D,L,σ]
 end
 
-function cartesian_bank_angle_input(u::AbstractVector{T},x::AbstractVector{T},s::VehicleModel{T},p::PlanetModel{T}) where {T}
+function angles_input(u::AbstractVector{T},x::AbstractVector{T},model::CartesianModel{T}) where {T}
 
     #unpack control
     α = u[1] #angle of attack
@@ -141,17 +105,55 @@ function cartesian_bank_angle_input(u::AbstractVector{T},x::AbstractVector{T},s:
     V = norm(v)
 
     #atmospheric density
-    ρ = atmospheric_density(r, p)
+    ρ = atmospheric_density(r, model)
 
     #Calculate drag acceleration
-    Cd = drag_coefficient(α, s)
-    A = s.A
-    m = s.m
+    Cd = drag_coefficient(α, model)
+    A = model.vehicle.A
+    m = model.vehicle.m
     D = 0.5*Cd*ρ*A*V*V/m
 
     #Calculate lift acceleration
-    Cl = lift_coefficient(α, s)
+    Cl = lift_coefficient(α, model)
     L = 0.5*Cl*ρ*A*V*V/m
 
     a = [D,L,σ]
 end
+
+# function linear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},y::AbstractVector{T},p::PlanetModel{T}) where {T}
+#
+#     #unpack state vector
+#     r = x[1:3]
+#     v = x[4:6]
+#
+#     #unpack parameter vector
+#     kg = y[1] # = g0/r0 (equivalent spring force for gravity - assumes variations in g and r are small)
+#
+#     #Terms involving Ω (planet rotation) are often thrown out in the literature.
+#     Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
+#     Ω̂ = hat([0, 0, Ω])
+#
+#     A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -2*Ω̂]
+#     B = [zeros(3,3); I]
+#
+#     ẋ .= A*x + B*u
+# end
+#
+# function quasilinear_dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},p::PlanetModel{T}) where {T}
+#
+#     #unpack state vector
+#     r = x[1:3]
+#     v = x[4:6]
+#
+#     #calculate gravity term
+#     kg = norm(gravitational_acceleration(r,p))/norm(r) #equivalent spring force for gravity - assumes variations in g and r are small
+#
+#     #Terms involving Ω (planet rotation) are often thrown out in the literature.
+#     Ω = p.Ω #Set Ω = 0.0 here if you want that behavior
+#     Ω̂ = hat([0, 0, Ω])
+#
+#     A = [zeros(3,3) I; -kg*I-Ω̂*Ω̂ -2*Ω̂]
+#     B = [zeros(3,3); I]
+#
+#     ẋ .= A*x + B*u
+# end
