@@ -22,19 +22,25 @@ x0 = [r0; v0]
 σ = 0.0*pi/180 #this is totally made up
 params = (model, α, σ)
 
-tspan = (0.0, 0.1)
+tspan = (0.0, 7.0/60.0)
 
 prob = ODEProblem(open_loop_dynamics!,x0,tspan,params)
 soln = solve(prob, Tsit5(), reltol=1e-9, abstol=1e-9)
 
-using Plots
-# plotly()
-# gr()
-
-nsteps = 100
+nsteps = 70
 t = LinRange(soln.t[1],soln.t[end],nsteps)
 alt = zeros(nsteps)
+ground_range = zeros(nsteps)
 for k = 1:nsteps
     alt[k] = norm(soln(t[k])[1:3])-Rm
 end
-plot(t.*60,alt)
+for k = 2:nsteps
+    ground_range[k] = ground_range[k-1] + norm(soln(t[k])[1:3]/norm(soln(t[k])[1:3]) - soln(t[k-1])[1:3]/norm(soln(t[k-1])[1:3]))*Rm
+end
+
+# using Plots
+# plot(t.*60,alt)
+# plot(t.*60,ground_range)
+
+@test norm(soln(6*60.0)[1:3]) > Rm #Check that we're still above the ground after 6 minutes
+@test ground_range[60] > 600.0 #Check that we can fly at least 600 Km down range in 6 minutes
