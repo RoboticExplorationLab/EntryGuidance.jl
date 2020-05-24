@@ -28,7 +28,7 @@ include("CoordinateTransformations.jl")
 export planet_fixed_to_inertial, inertial_to_planet_fixed, cartesian_to_vinh, vinh_to_cartesian
 
 include("Dynamics.jl")
-export dynamics!, angles_input
+export dynamics, dynamics!, angles_input
 
 include("Controllers.jl")
 

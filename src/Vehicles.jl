@@ -1,8 +1,8 @@
 #Units are L=km M=kg T=hours
 
-abstract type AbstractVehicle{T} end
+abstract type AbstractVehicle end
 
-struct HypersonicVehicle{T} <: AbstractVehicle{T}
+struct HypersonicVehicle{T} <: AbstractVehicle
     m::T #mass (M)
     A::T #area (L^2)
     Cd0::T #drag at zero angle of attack
@@ -17,12 +17,12 @@ function SimpleMSLVehicle()
     s = HypersonicVehicle{Float64}(2400.0, π*2.25e-3*2.25e-3, 1.65, -2.77, 1.42)
 end
 
-function drag_coefficient(α::T, s::HypersonicVehicle{T}) where {T}
+function drag_coefficient(α::T, s::HypersonicVehicle{S}) where {T,S}
     #Quadratic in angle of attack (valid up to ~10 deg.)
     Cd = s.Cd0 - s.Cd2*α*α
 end
 
-function lift_coefficient(α::T, s::HypersonicVehicle{T}) where {T}
+function lift_coefficient(α::T, s::HypersonicVehicle{S}) where {T,S}
     #Linear in angle of attack (valid up to ~10 deg.)
     Cl = s.Cl1*α
 end

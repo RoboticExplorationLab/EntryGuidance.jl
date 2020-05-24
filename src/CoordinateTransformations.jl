@@ -4,26 +4,26 @@ function hat(x)
          -x[2] x[1] 0]
 end
 
-function planet_fixed_to_inertial(t::T,x::AbstractVector{T},p::Planet{T}) where {T}
+function planet_fixed_to_inertial(t::T,x::AbstractVector{T},p::Planet{S}) where {T,S}
     #Assume axes are aligned at t=0
     ω̂ = hat([0, 0, p.Ω])
     R = exp(t*ω̂)
     xn = [R*x[1:3]; R*(x[4:6] + ω̂*x[1:3])]
 end
 
-function planet_fixed_to_inertial(x::AbstractVector{T},p::Planet{T}) where {T}
+function planet_fixed_to_inertial(x::AbstractVector{T},p::Planet{S}) where {T,S}
     #Assume axes are aligned
     planet_fixed_to_inertial(0.0,x,p)
 end
 
-function inertial_to_planet_fixed(t::T,x::AbstractVector{T},p::Planet{T}) where {T}
+function inertial_to_planet_fixed(t::T,x::AbstractVector{T},p::Planet{S}) where {T,S}
     #Assume axes are aligned at t=0
     ω̂ = hat([0, 0, p.Ω])
     R = exp(-t*ω̂)
     xp = [R*x[1:3]; R*(x[4:6] - ω̂*x[1:3])]
 end
 
-function inertial_to_planet_fixed(x::AbstractVector{T},p::Planet{T}) where {T}
+function inertial_to_planet_fixed(x::AbstractVector{T},p::Planet{S}) where {T,S}
     #Assume axes are aligned
     inertial_to_planet_fixed(0.0,x,p)
 end

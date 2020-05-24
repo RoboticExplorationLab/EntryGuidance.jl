@@ -1,6 +1,6 @@
 using LinearAlgebra
 
-function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},m::VinhModel{T}) where {T}
+function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},m::VinhModel{S}) where {T,S}
     #Taken from pages 2-11 to 2-12 of Hypersonic Flight Mechanics by Busemann, Vinh, and Culp
     #https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19760024112.pdf
 
@@ -34,7 +34,7 @@ function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector
     ẋ .= [ṙ, θ̇, ϕ̇, v̇, γ̇, ψ̇]
 end
 
-function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},m::CartesianModel{T}) where {T}
+function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector{T},m::CartesianModel{S}) where {T,S}
 
     #unpack state vector
     r = x[1:3]
@@ -67,7 +67,74 @@ function dynamics!(ẋ::AbstractVector{T},x::AbstractVector{T},u::AbstractVector
     ẋ .= [v; v̇]
 end
 
-function angles_input(u::AbstractVector{T},x::AbstractVector{T},model::VinhModel{T}) where {T}
+function dynamics(x::AbstractVector{T},u::AbstractVector{T},m::VinhModel{S}) where {T,S}
+    #Taken from pages 2-11 to 2-12 of Hypersonic Flight Mechanics by Busemann, Vinh, and Culp
+    #https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19760024112.pdf
+
+    #unpack state vector
+    r = x[1]
+    θ = x[2] #longitude
+    ϕ = x[3] #latitude
+    v = x[4] #velocity magnitude
+    γ = x[5] #flight path angle
+    ψ = x[6] #heading
+
+    #unpack control vector
+    D = u[1] #Drag acceleration magnitude
+    L = u[2] #Lift acceleration magnitude
+    σ = u[3] #Bank angle (specifies lift direction)
+
+    #get gravity (assumed spherical for now)
+    g = norm(gravitational_acceleration([r,0.0,0.0], m))
+
+    #Terms involving Ω (planet rotation) are often thrown out in the literature.
+    Ω = m.planet.Ω #Set Ω = 0.0 here if you want that behavior
+
+    ṙ = v*sin(γ)
+    θ̇ = v*cos(γ)*cos(ψ)/(r*cos(ϕ))
+    ϕ̇ = v*cos(γ)*sin(ψ)/r
+
+    v̇ = -D - g*sin(γ) + Ω*Ω*r*cos(ϕ)*(sin(γ)*cos(ϕ) - cos(γ)*sin(ϕ)*sin(ψ))
+    γ̇ = (L*cos(σ) - g*cos(γ) + (v*v/r)*cos(γ) + 2*Ω*v*cos(ϕ)*cos(ψ) + Ω*Ω*r*cos(ϕ)*(cos(γ)*cos(ϕ)+sin(γ)*sin(ϕ)*sin(ψ)))/v
+    ψ̇ = (L*sin(σ)/cos(γ) - (v*v/r)*cos(γ)*cos(ψ)*tan(ϕ) + 2*Ω*v*(tan(γ)*cos(ϕ)*sin(ψ) - sin(ϕ)) - (Ω*Ω*r/cos(γ))*sin(ϕ)*cos(ϕ)*cos(ψ))/v
+
+    ẋ = [ṙ, θ̇, ϕ̇, v̇, γ̇, ψ̇]
+end
+
+function dynamics(x::AbstractVector{T},u::AbstractVector{T},m::CartesianModel{S}) where {T,S}
+
+    #unpack state vector
+    r = x[1:3]
+    v = x[4:6]
+
+    #unpack control vector
+    D = u[1] #Drag acceleration magnitude
+    L = u[2] #Lift acceleration magnitude
+    σ = u[3] #Bank angle (specifies lift direction)
+
+    #get gravity
+    g = gravitational_acceleration(r, m)
+
+    #Terms involving Ω (planet rotation) are often thrown out in the literature.
+    Ω = m.planet.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω̂ = hat([0, 0, Ω])
+
+    #Aerodynamic acceleration
+    #Bank angle is computed relative to "vertical" (r, v) plane.
+    #σ=0 corresponds to lift poining in the "near radial" direction
+    #Positive σ rotates lift vector around v in right-hand sense towards r×v
+    e1 = cross(r,v)
+    e1 = e1./norm(e1)
+    e2 = cross(v,e1)
+    e2 = e2./norm(e2)
+    a = -(D/norm(v)).*v + L*sin(σ)*e1 + L*cos(σ)*e2
+
+    v̇ = a + g - 2*Ω̂*v - Ω̂*Ω̂*r
+
+    ẋ = [v; v̇]
+end
+
+function angles_input(u::AbstractVector{T},x::AbstractVector{T},model::VinhModel{S}) where {T,S}
 
     #unpack control
     α = u[1] #angle of attack
@@ -93,7 +160,7 @@ function angles_input(u::AbstractVector{T},x::AbstractVector{T},model::VinhModel
     a = [D,L,σ]
 end
 
-function angles_input(u::AbstractVector{T},x::AbstractVector{T},model::CartesianModel{T}) where {T}
+function angles_input(u::AbstractVector{T},x::AbstractVector{T},model::CartesianModel{S}) where {T,S}
 
     #unpack control
     α = u[1] #angle of attack

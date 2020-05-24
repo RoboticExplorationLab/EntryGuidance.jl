@@ -1,14 +1,14 @@
 #Units are L=km M=kg T=hours
 
-abstract type AbstractAtmosphere{T} end
+abstract type AbstractAtmosphere end
 
-struct ExponentialAtmosphere{T} <: AbstractAtmosphere{T}
+struct ExponentialAtmosphere{T} <: AbstractAtmosphere
     r0::T #reference radius (L)
     H::T #scale height (L)
     ρ0::T #surface density (M/L^3)
 end
 
-struct BiExponentialAtmosphere{T} <: AbstractAtmosphere{T}
+struct BiExponentialAtmosphere{T} <: AbstractAtmosphere
     r0::T #reference radius (L)
     transition_altitude::T #transition altitude (L)
     H1::T #low altitude scale height (L)
@@ -32,21 +32,21 @@ function MarsBiExponentialAtmosphere()
     BiExponentialAtmosphere{Float64}(3396.2, 25.0, 11.049, 1.59e7, 7.295, 5.25e7)
 end
 
-function atmospheric_density(r::AbstractVector{T}, a::ExponentialAtmosphere{T}) where {T}
+function atmospheric_density(r::AbstractVector{T}, a::ExponentialAtmosphere{S}) where {T,S}
     R = norm(r)
     atmospheric_density(R,a)
 end
 
-function atmospheric_density(r::T, a::ExponentialAtmosphere{T}) where {T}
+function atmospheric_density(r::T, a::ExponentialAtmosphere{S}) where {T,S}
     ρ = a.ρ0*exp(-(r-a.r0)/a.H)
 end
 
-function atmospheric_density(r::AbstractVector{T}, a::BiExponentialAtmosphere{T}) where {T}
+function atmospheric_density(r::AbstractVector{T}, a::BiExponentialAtmosphere{S}) where {T,S}
     R = norm(r)
     atmospheric_density(R,a)
 end
 
-function atmospheric_density(r::T, a::BiExponentialAtmosphere{T}) where {T}
+function atmospheric_density(r::T, a::BiExponentialAtmosphere{S}) where {T,S}
     #Smoothly interpolate between two exponential fits
     alt = r-a.r0
     ρ_low = a.ρ1*exp(-alt/a.H1)

@@ -1,12 +1,12 @@
 #Units are L=km M=kg T=hours
 
-abstract type AbstractGravityField{T} end
+abstract type AbstractGravityField end
 
-struct SphericalGravityField{T} <: AbstractGravityField{T}
+struct SphericalGravityField{T} <: AbstractGravityField
     μ::T #standard gravitational parameter
 end
 
-struct J2GravityField{T} <: AbstractGravityField{T}
+struct J2GravityField{T} <: AbstractGravityField
     μ::T #standard gravitational parameter (L^3/T^2)
     R::T #planet radius (L)
     J2::T #J2 coefficient (dimensionless)
@@ -28,12 +28,12 @@ function MarsGravityJ2()
     J2GravityField{Float64}(42828.37*(3600.0^2), 3396.203986, 0.196045e-2)
 end
 
-function gravitational_acceleration(r::AbstractVector{T}, g::SphericalGravityField{T}) where {T}
+function gravitational_acceleration(r::AbstractVector{T}, g::SphericalGravityField{S}) where {T,S}
     R = norm(r)
     a = (-g.μ/(R*R*R)).*r
 end
 
-function gravitational_acceleration(r::AbstractVector{T}, g::J2GravityField{T}) where {T}
+function gravitational_acceleration(r::AbstractVector{T}, g::J2GravityField{S}) where {T,S}
     R = norm(r)
     R3 = R^3
     R7 = R^7
