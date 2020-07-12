@@ -4,16 +4,19 @@ using EntryGuidance
 const EG = EntryGuidance
 using TrajectoryOptimization
 const TO = TrajectoryOptimization
+using RobotDynamics
+const RD = RobotDynamics
+using Altro
 
 struct EntryVehicleModel{T} <: TO.AbstractModel
     evmodel::EG.CartesianModel{T}
 end
 
-Base.size(::EntryVehicleModel) = 8,2
-
-function TO.dynamics(model::EntryVehicleModel, x, u)
-    [EG.dynamics(x[1:6], EG.angles_input(x[7:8],x[1:6],model.evmodel), model.evmodel); u]
+function RD.dynamics(model::EntryVehicleModel, x, u)
+    [EG.dynamics(x[1:6], EG.angles_input(x[7:8],x[1:6],model.evmodel), model.evmodel); u[1:2]]
 end
+
+Base.size(::EntryVehicleModel) = 8,2
 
 model = EntryVehicleModel(CartesianMSLModel())
 n,m = size(model)
@@ -35,22 +38,39 @@ rf = Rm.*[cos(7.869/Rm)*cos(631.979/Rm); cos(7.869/Rm)*sin(631.979/Rm); sin(7.86
 vf = zeros(3)
 xf = SVector{n}([rf; vf; α; σ])
 
+#Cost function
 Q = Diagonal(SVector{n}(1e-6.*ones(n)))
-Qn = Diagonal(@SVector [100.0, 100.0, 100.0, 0.1, 0.1, 0.1, 0.0, 0.0])
-R = Diagonal(SVector{m}(0.1.*ones(m)))
+Qn = Diagonal(@SVector [100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+R = Diagonal(SVector{m}(ones(m)))
 obj = LQRObjective(Q,R,Qn,xf,N)
 
-cons = TO.ConstraintSet(n,m,N)
+#Constraints
+cons = TO.ConstraintList(n,m,N)
 ∞ = Inf64
 add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,0.0,-pi],x_max=SA[∞,∞,∞,∞,∞,∞,20*pi/180,pi]), 1:N)
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, constraints=cons)
-solver = AugmentedLagrangianSolver(prob)
+solver = iLQRSolver(prob)
 solve!(solver)
 
 X = states(solver)
 U = controls(solver)
 
-using Plots
+max_violation(solver)
 
-plot(X)
+x_traj = zeros(n,N)
+alt = zeros(N)
+AoA = zeros(N)
+bank = zeros(N)
+for k = 1:N
+    x_traj[:,k] .= X[k]
+    alt[k] = norm(x_traj[1:3,k])-Rm
+    AoA[k] = x_traj[7,k]
+    bank[k] = x_traj[8,k]
+end
+
+using Plots
+plotly()
+plot(alt)
+plot(alpha_traj)
+plot(bank)
