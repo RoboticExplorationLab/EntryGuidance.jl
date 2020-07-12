@@ -13,10 +13,12 @@ struct EntryVehicleModel{T} <: TO.AbstractModel
 end
 
 function RD.dynamics(model::EntryVehicleModel, x, u)
-    [EG.dynamics(x[1:6], EG.angles_input(x[7:8],x[1:6],model.evmodel), model.evmodel); u[1:2]]
+    α̇ = u[1]-u[2]
+    σ̇ = u[3]-u[4]
+    [EG.dynamics(x[1:6], EG.angles_input(x[7:8],x[1:6],model.evmodel), model.evmodel); α̇; σ̇]
 end
 
-Base.size(::EntryVehicleModel) = 8,2
+Base.size(::EntryVehicleModel) = 8,4
 
 model = EntryVehicleModel(CartesianMSLModel())
 n,m = size(model)
@@ -39,18 +41,27 @@ vf = zeros(3)
 xf = SVector{n}([rf; vf; α; σ])
 
 #Cost function
-Q = Diagonal(SVector{n}(1e-6.*ones(n)))
+Q = Diagonal(SVector{n}(1e-4.*ones(n)))
+R = Diagonal(SVector{m}(1e-4.*ones(m)))
+H = zeros(m,n)
+q = -Q*xf
+r = 10.0*ones(m)
+c = 0.0
+stage_cost = QuadraticCost(Q,R,H,q,r,c,terminal=false)
+
 Qn = Diagonal(@SVector [100.0, 100.0, 100.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-R = Diagonal(SVector{m}(ones(m)))
-obj = LQRObjective(Q,R,Qn,xf,N)
+terminal_cost = LQRCost(Qn,R,xf,terminal=true)
+
+obj = Objective(stage_cost,terminal_cost,N)
 
 #Constraints
 cons = TO.ConstraintList(n,m,N)
 ∞ = Inf64
-add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,0.0,-pi],x_max=SA[∞,∞,∞,∞,∞,∞,20*pi/180,pi]), 1:N)
+add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,0.0,-pi],x_max=SA[∞,∞,∞,∞,∞,∞,20*pi/180,pi]),1:N)
+add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,0.0,0.0],u_max=[∞,∞,∞,∞]),1:(N-1))
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, constraints=cons)
-solver = iLQRSolver(prob)
+solver = AugmentedLagrangianSolver(prob)
 solve!(solver)
 
 X = states(solver)
@@ -69,8 +80,19 @@ for k = 1:N
     bank[k] = x_traj[8,k]
 end
 
+u_traj = zeros(m,N-1)
+α̇ = zeros(N-1)
+σ̇ = zeros(N-1)
+for k = 1:(N-1)
+    u_traj[:,k] .= U[k]
+    α̇[k] = u_traj[1,k]-u_traj[2,k]
+    σ̇[k] = u_traj[3,k]-u_traj[4,k]
+end
+
 using Plots
-plotly()
+plotlyjs()
 plot(alt)
-plot(alpha_traj)
+plot(AoA)
 plot(bank)
+plot(α̇)
+plot(σ̇)
