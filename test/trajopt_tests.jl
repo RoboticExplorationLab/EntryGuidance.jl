@@ -31,7 +31,7 @@ function RD.discrete_dynamics(::Type{EntryVehicleRK}, model::EntryVehicle,
     k2 = RD.dynamics(model, x + k1/2,      u)*h;
     k3 = RD.dynamics(model, x - k1 + 2*k2, u)*h;
 
-    return [x[1:7] + (k1[1:7] + 4*k2[1:7] + k3[1:7])/6; x[8]+u[3]]
+    return [x[1:7] + (k1[1:7] + 4*k2[1:7] + k3[1:7])/6; u[3]]
 end
 
 Base.size(::EntryVehicle) = 8,3
@@ -50,24 +50,24 @@ V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
 α = 15.0*pi/180 #derived from MSL initial L/D = 0.24
 σ = 0.0*pi/180 #this is totally made up
-x0 = SVector{n}([r0; v0; σ; 0.0])
+x0 = SVector{n}([r0; v0; σ; dt0])
 
 #Final conditions for MSL 631.979 km down range and 7.869 km cross-range from entry point
 Rf = Rm+10.0 #Parachute opens at 10 km altitude
 rf = Rf*[cos(7.869/Rf)*cos(631.979/Rf); cos(7.869/Rf)*sin(631.979/Rf); sin(7.869/Rf)]
 vf = zeros(3)
-xf = SVector{n}([rf; vf; σ; tf*3600])
+xf = SVector{n}([rf; vf; σ; dt0])
 
 #Cost function
 Q = Diagonal(SVector{n}(zeros(n)))
 R = Diagonal(SVector{m}(1e-5.*ones(m)))
 H = zeros(m,n)
 q = -Q*xf
-r = SA[10.0, 10.0, 0.0]
+r = SA[100.0, 100.0, 0.0]
 c = 0.0
-stage_cost = DiagonalCost(Q,R,H,q,r,c,terminal=false)
+stage_cost = QuadraticCost(Q,R,H,q,r,c,terminal=false)
 
-Qn = Diagonal(@SVector [1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1e-5])
+Qn = Diagonal(@SVector [1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 terminal_cost = LQRCost(Qn,R,xf,terminal=true)
 
 obj = Objective(stage_cost,terminal_cost,N)
@@ -76,7 +76,7 @@ obj = Objective(stage_cost,terminal_cost,N)
 cons = TO.ConstraintList(n,m,N)
 ∞ = Inf64
 add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,-pi,-∞],x_max=SA[∞,∞,∞,∞,∞,∞,pi,∞]),1:N)
-add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,1.0],u_max=[∞,∞,4.0]),1:(N-1))
+add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,2.0],u_max=[∞,∞,3.0]),1:(N-1))
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 #Initial Controls
