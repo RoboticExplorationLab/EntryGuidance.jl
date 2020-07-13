@@ -60,14 +60,14 @@ xf = SVector{n}([rf; vf; σ; dt0])
 
 #Cost function
 Q = Diagonal(SVector{n}(zeros(n)))
-R = Diagonal(SVector{m}(1e-5.*ones(m)))
+R = Diagonal(SVector{m}([1e-3, 1e-3, 1e-3]))
 H = zeros(m,n)
 q = -Q*xf
 r = SA[100.0, 100.0, 0.0]
 c = 0.0
-stage_cost = QuadraticCost(Q,R,H,q,r,c,terminal=false)
+stage_cost = DiagonalCost(Q,R,H,q,r,c,terminal=false)
 
-Qn = Diagonal(@SVector [1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+Qn = Diagonal(@SVector [1.0, 1.0, 1.0, 1e-5, 1e-5, 1e-5, 1e-5, 1e-5])
 terminal_cost = LQRCost(Qn,R,xf,terminal=true)
 
 obj = Objective(stage_cost,terminal_cost,N)
@@ -80,10 +80,10 @@ add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,2.0],u_max=[∞,∞,3.0
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 #Initial Controls
-U0 = abs.(randn(m,N-1))
-U0[3,:] .= dt0*ones(N-1)
+u_traj = abs.(randn(m,N-1))
+u_traj[3,:] .= dt0*ones(N-1)
 
-prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=U0, constraints=cons, integration=EntryVehicleRK)
+prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integration=EntryVehicleRK)
 solver = AugmentedLagrangianSolver(prob)
 solve!(solver)
 
@@ -101,32 +101,32 @@ x_traj = zeros(n,N)
 alt = zeros(N)
 #AoA = zeros(N)
 bank = zeros(N)
-ts = zeros(N)
 for k = 1:N
     x_traj[:,k] .= X[k]
     alt[k] = norm(x_traj[1:3,k])-Rm
     #AoA[k] = x_traj[7,k]
     bank[k] = x_traj[7,k]
-    ts[k] = x_traj[8,k]
 end
 
 u_traj = zeros(m,N-1)
 # u_traj = U0
 σ̇ = zeros(N-1)
 dt = zeros(N-1)
+t_traj = zeros(N)
 for k = 1:(N-1)
     u_traj[:,k] .= U[k]
     σ̇[k] = u_traj[1,k]-u_traj[2,k]
     dt[k] = u_traj[3,k]
+    t_traj[k+1] = t_traj[k] + dt[k]
 end
 
 using Plots
 #plotlyjs()
-pyplot()
-plot(alt)
+# pyplot()
+plot(t_traj, alt)
 #plot(AoA)
-plot(bank)
+plot(t_traj, bank)
 #plot(α̇)
-plot(σ̇)
+plot(t_traj[1:N-1], σ̇)
 plot(dt)
-plot(ts)
+plot(t_traj)
