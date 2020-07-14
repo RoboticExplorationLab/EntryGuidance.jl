@@ -7,6 +7,7 @@ const TO = TrajectoryOptimization
 using RobotDynamics
 const RD = RobotDynamics
 using Altro
+using Test
 
 struct EntryVehicle{T} <: TO.AbstractModel
     evmodel::EG.CartesianModel{T}
@@ -87,46 +88,80 @@ prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integr
 solver = AugmentedLagrangianSolver(prob)
 solve!(solver)
 
-X = states(solver)
-U = controls(solver)
+# X = states(solver)
+# U = controls(solver)
 
-max_violation(solver)
+@test max_violation(solver) < 1e-3
 
-#Test rollout
-x_traj = zeros(n,N)
-# x_traj[:,1] .= x0
-# for k = 1:(N-1)
-#     x_traj[:,k+1] .= discrete_dynamics(EntryVehicleRK,model,SVector{n}(x_traj[:,k]),SVector{m}(U0[:,k]),0.0,2.0)
+# #Test rollout
+# x_traj = zeros(n,N)
+# # x_traj[:,1] .= x0
+# # for k = 1:(N-1)
+# #     x_traj[:,k+1] .= discrete_dynamics(EntryVehicleRK,model,SVector{n}(x_traj[:,k]),SVector{m}(U0[:,k]),0.0,2.0)
+# # end
+# alt = zeros(N)
+# #AoA = zeros(N)
+# bank = zeros(N)
+#
+# for k = 1:N
+#     x_traj[:,k] .= X[k]
+#     alt[k] = norm(x_traj[1:3,k])-Rm
+#     #AoA[k] = x_traj[7,k]
+#     bank[k] = x_traj[7,k]
 # end
-alt = zeros(N)
-#AoA = zeros(N)
-bank = zeros(N)
-for k = 1:N
-    x_traj[:,k] .= X[k]
-    alt[k] = norm(x_traj[1:3,k])-Rm
-    #AoA[k] = x_traj[7,k]
-    bank[k] = x_traj[7,k]
-end
+#
+# for k = 2:nsteps
+#     ground_range[k] = ground_range[k-1] + norm(soln(t[k])[1:3]/norm(soln(t[k])[1:3]) - soln(t[k-1])[1:3]/norm(soln(t[k-1])[1:3]))*Rm
+# end
+#
+# u_traj = zeros(m,N-1)
+# # u_traj = U0
+# σ̇ = zeros(N-1)
+# dt = zeros(N-1)
+# t_traj = zeros(N)
+# down_range = zeros(N)
+# cross_range = zeros(N)
+# for k = 1:(N-1)
+#     u_traj[:,k] .= U[k]
+#     σ̇[k] = u_traj[1,k]-u_traj[2,k]
+#     dt[k] = u_traj[3,k]
+#     t_traj[k+1] = t_traj[k] + dt[k]
+#     down_range[k+1] = down_range[k] + norm(x_traj[1:3,k+1] - x_traj[1:3,k])
+#     cross_range[k+1] = cross_range[k] + (cross(r0,v0)/norm(cross(r0,v0)))'*(x_traj[1:3,k+1] - x_traj[1:3,k])
+# end
 
-u_traj = zeros(m,N-1)
-# u_traj = U0
-σ̇ = zeros(N-1)
-dt = zeros(N-1)
-t_traj = zeros(N)
-for k = 1:(N-1)
-    u_traj[:,k] .= U[k]
-    σ̇[k] = u_traj[1,k]-u_traj[2,k]
-    dt[k] = u_traj[3,k]
-    t_traj[k+1] = t_traj[k] + dt[k]
-end
 
-using Plots
-#plotlyjs()
+
+# using Plots
 # pyplot()
-plot(t_traj, alt)
-#plot(AoA)
-plot(t_traj, bank)
-#plot(α̇)
-plot(t_traj[1:N-1], σ̇)
-plot(dt)
-plot(t_traj)
+#
+# p1 = plot(t_traj, alt, lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Altitude (km)")
+# savefig("altitude_plot.pdf")
+#
+# p2 = plot(t_traj, down_range, lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Down Range (km)")
+# savefig("range_plot.pdf")
+#
+# p3 = plot(t_traj, cross_range, lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Cross Range (km)")
+# savefig("cross_plot.pdf")
+#
+# plot(p2,p3, layout=(2,1))
+# plot!(size=(600,500))
+# savefig("range_plot.pdf")
+#
+# plot(t_traj, bank*(180/pi), lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Bank Angle (deg)")
+# savefig("bank_plot.pdf")
+#
+# plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false, ylims = (-40,10))
+# xlabel!("Time (sec)")
+# ylabel!("u")
+# savefig("bankdot_plot.pdf")
+#
+# plot(dt)
