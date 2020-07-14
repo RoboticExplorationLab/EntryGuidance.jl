@@ -16,7 +16,7 @@ end
 function RD.dynamics(model::EntryVehicle, x, u)
     α = 15.0*pi/180
     σ̇ = u[1]-u[2]
-    [EG.dynamics(x[1:6], EG.angles_input([α, x[7]],x[1:6],model.evmodel), model.evmodel); σ̇; 0.0]
+    return [EG.dynamics(x[1:6], EG.angles_input([α, x[7]],x[1:6],model.evmodel), model.evmodel); σ̇]
 end
 
 # Define a custom integration method
@@ -32,10 +32,10 @@ function RD.discrete_dynamics(::Type{EntryVehicleRK}, model::EntryVehicle,
     k2 = RD.dynamics(model, x + k1/2,      u)*h;
     k3 = RD.dynamics(model, x - k1 + 2*k2, u)*h;
 
-    return [x[1:7] + (k1[1:7] + 4*k2[1:7] + k3[1:7])/6; u[3]]
+    return x + (k1 + 4*k2 + k3)/6
 end
 
-Base.size(::EntryVehicle) = 8,3
+Base.size(::EntryVehicle) = 7,3
 
 model = EntryVehicle(CartesianMSLModel())
 n,m = size(model)
@@ -51,13 +51,13 @@ V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
 α = 15.0*pi/180 #derived from MSL initial L/D = 0.24
 σ = 0.0*pi/180 #this is totally made up
-x0 = SVector{n}([r0; v0; σ; dt0])
+x0 = SVector{n}([r0; v0; σ])
 
 #Final conditions for MSL 631.979 km down range and 7.869 km cross-range from entry point
 Rf = Rm+10.0 #Parachute opens at 10 km altitude
 rf = Rf*[cos(7.869/Rf)*cos(631.979/Rf); cos(7.869/Rf)*sin(631.979/Rf); sin(7.869/Rf)]
 vf = zeros(3)
-xf = SVector{n}([rf; vf; σ; dt0])
+xf = SVector{n}([rf; vf; σ])
 
 #Cost function
 Q = Diagonal(SVector{n}(zeros(n)))
@@ -68,7 +68,7 @@ r = SA[100.0, 100.0, 0.0]
 c = 0.0
 stage_cost = DiagonalCost(Q,R,H,q,r,c,terminal=false)
 
-Qn = Diagonal(@SVector [1.0, 1.0, 1.0, 1e-5, 1e-5, 1e-5, 1e-5, 1e-5])
+Qn = Diagonal(@SVector [1.0, 1.0, 1.0, 1e-5, 1e-5, 1e-5, 1e-5])
 terminal_cost = LQRCost(Qn,R,xf,terminal=true)
 
 obj = Objective(stage_cost,terminal_cost,N)
@@ -76,92 +76,88 @@ obj = Objective(stage_cost,terminal_cost,N)
 #Constraints
 cons = TO.ConstraintList(n,m,N)
 ∞ = Inf64
-add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,-pi,-∞],x_max=SA[∞,∞,∞,∞,∞,∞,pi,∞]),1:N)
+add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,-pi],x_max=SA[∞,∞,∞,∞,∞,∞,pi]),1:N)
 add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,2.0],u_max=[∞,∞,3.0]),1:(N-1))
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 #Initial Controls
-u_traj = abs.(randn(m,N-1))
+u_traj = abs.(0.01*randn(m,N-1))
 u_traj[3,:] .= dt0*ones(N-1)
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integration=EntryVehicleRK)
 solver = AugmentedLagrangianSolver(prob)
 solve!(solver)
 
-# X = states(solver)
-# U = controls(solver)
+X = states(solver)
+U = controls(solver)
 
 @test max_violation(solver) < 1e-3
 
 # #Test rollout
-# x_traj = zeros(n,N)
+x_traj = zeros(n,N)
 # # x_traj[:,1] .= x0
 # # for k = 1:(N-1)
 # #     x_traj[:,k+1] .= discrete_dynamics(EntryVehicleRK,model,SVector{n}(x_traj[:,k]),SVector{m}(U0[:,k]),0.0,2.0)
 # # end
-# alt = zeros(N)
+alt = zeros(N)
 # #AoA = zeros(N)
-# bank = zeros(N)
+bank = zeros(N)
 #
-# for k = 1:N
-#     x_traj[:,k] .= X[k]
-#     alt[k] = norm(x_traj[1:3,k])-Rm
-#     #AoA[k] = x_traj[7,k]
-#     bank[k] = x_traj[7,k]
-# end
-#
-# for k = 2:nsteps
-#     ground_range[k] = ground_range[k-1] + norm(soln(t[k])[1:3]/norm(soln(t[k])[1:3]) - soln(t[k-1])[1:3]/norm(soln(t[k-1])[1:3]))*Rm
-# end
-#
-# u_traj = zeros(m,N-1)
+for k = 1:N
+    x_traj[:,k] .= X[k]
+    alt[k] = norm(x_traj[1:3,k])-Rm
+    #AoA[k] = x_traj[7,k]
+    bank[k] = x_traj[7,k]
+end
+
+u_traj = zeros(m,N-1)
 # # u_traj = U0
-# σ̇ = zeros(N-1)
-# dt = zeros(N-1)
-# t_traj = zeros(N)
-# down_range = zeros(N)
-# cross_range = zeros(N)
-# for k = 1:(N-1)
-#     u_traj[:,k] .= U[k]
-#     σ̇[k] = u_traj[1,k]-u_traj[2,k]
-#     dt[k] = u_traj[3,k]
-#     t_traj[k+1] = t_traj[k] + dt[k]
-#     down_range[k+1] = down_range[k] + norm(x_traj[1:3,k+1] - x_traj[1:3,k])
-#     cross_range[k+1] = cross_range[k] + (cross(r0,v0)/norm(cross(r0,v0)))'*(x_traj[1:3,k+1] - x_traj[1:3,k])
-# end
+σ̇ = zeros(N-1)
+dt = zeros(N-1)
+t_traj = zeros(N)
+down_range = zeros(N)
+cross_range = zeros(N)
+for k = 1:(N-1)
+    u_traj[:,k] .= U[k]
+    σ̇[k] = u_traj[1,k]-u_traj[2,k]
+    dt[k] = u_traj[3,k]
+    t_traj[k+1] = t_traj[k] + dt[k]
+    down_range[k+1] = down_range[k] + norm(x_traj[1:3,k+1] - x_traj[1:3,k])
+    cross_range[k+1] = cross_range[k] + (cross(r0,v0)/norm(cross(r0,v0)))'*(x_traj[1:3,k+1] - x_traj[1:3,k])
+end
 
 
 
-# using Plots
-# pyplot()
-#
-# p1 = plot(t_traj, alt, lw=2, legend=false)
-# xlabel!("Time (sec)")
-# ylabel!("Altitude (km)")
+using Plots
+pyplot()
+
+p1 = plot(t_traj, alt, lw=2, legend=false)
+xlabel!("Time (sec)")
+ylabel!("Altitude (km)")
 # savefig("altitude_plot.pdf")
-#
-# p2 = plot(t_traj, down_range, lw=2, legend=false)
-# xlabel!("Time (sec)")
-# ylabel!("Down Range (km)")
+
+p2 = plot(t_traj, down_range, lw=2, legend=false)
+xlabel!("Time (sec)")
+ylabel!("Down Range (km)")
 # savefig("range_plot.pdf")
-#
-# p3 = plot(t_traj, cross_range, lw=2, legend=false)
-# xlabel!("Time (sec)")
-# ylabel!("Cross Range (km)")
+
+p3 = plot(t_traj, cross_range, lw=2, legend=false)
+xlabel!("Time (sec)")
+ylabel!("Cross Range (km)")
 # savefig("cross_plot.pdf")
-#
-# plot(p2,p3, layout=(2,1))
-# plot!(size=(600,500))
+
+plot(p2,p3, layout=(2,1))
+plot!(size=(600,500))
 # savefig("range_plot.pdf")
-#
-# plot(t_traj, bank*(180/pi), lw=2, legend=false)
-# xlabel!("Time (sec)")
-# ylabel!("Bank Angle (deg)")
+
+plot(t_traj, bank*(180/pi), lw=2, legend=false)
+xlabel!("Time (sec)")
+ylabel!("Bank Angle (deg)")
 # savefig("bank_plot.pdf")
-#
-# plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false, ylims = (-40,10))
-# xlabel!("Time (sec)")
-# ylabel!("u")
+
+plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false, ylims = (-40,10))
+xlabel!("Time (sec)")
+ylabel!("u")
 # savefig("bankdot_plot.pdf")
-#
-# plot(dt)
+
+plot(dt)
