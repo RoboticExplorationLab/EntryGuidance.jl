@@ -61,14 +61,14 @@ xf = SVector{n}([rf; vf; σ])
 
 #Cost function
 Q = Diagonal(SVector{n}(zeros(n)))
-R = Diagonal(SVector{m}([1e-3, 1e-3, 1e-3]))
+R = Diagonal(SVector{m}([0.001, 0.001, 0.1]))
 H = zeros(m,n)
 q = -Q*xf
 r = SA[100.0, 100.0, 0.0]
 c = 0.0
 stage_cost = DiagonalCost(Q,R,H,q,r,c,terminal=false)
 
-Qn = Diagonal(@SVector [1.0, 1.0, 1.0, 1e-5, 1e-5, 1e-5, 1e-5])
+Qn = Diagonal(@SVector [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 terminal_cost = LQRCost(Qn,R,xf,terminal=true)
 
 obj = Objective(stage_cost,terminal_cost,N)
@@ -81,17 +81,24 @@ add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,2.0],u_max=[∞,∞,3.0
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 #Initial Controls
-u_traj = abs.(0.01*randn(m,N-1))
+u_traj = ones(m,N-1)
 u_traj[3,:] .= dt0*ones(N-1)
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integration=EntryVehicleRK)
+
 solver = AugmentedLagrangianSolver(prob)
+solver.solver_uncon.opts.max_cost_value = 1e15
+solver.solver_uncon.opts.bp_reg_initial = 1e-6
+solver.solver_uncon.opts.bp_reg_min = 1e-6
+solver.opts.constraint_tolerance = 1e-2
+solver.opts.cost_tolerance_intermediate = 1e-2
+solver.opts.verbose = true
 solve!(solver)
 
 X = states(solver)
 U = controls(solver)
 
-@test max_violation(solver) < 1e-3
+@test max_violation(solver) < 1e-2
 
 # #Test rollout
 x_traj = zeros(n,N)
@@ -155,7 +162,7 @@ xlabel!("Time (sec)")
 ylabel!("Bank Angle (deg)")
 # savefig("bank_plot.pdf")
 
-plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false, ylims = (-40,10))
+plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false)
 xlabel!("Time (sec)")
 ylabel!("u")
 # savefig("bankdot_plot.pdf")
