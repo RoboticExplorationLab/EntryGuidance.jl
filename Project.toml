@@ -5,6 +5,7 @@ version = "0.1.0"
 
 [deps]
 Altro = "5dcf52e5-e2fb-48e0-b826-96f46d2e3e73"
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
 ECOS = "e2685f51-7e38-5353-a97d-a921fd2c8199"
