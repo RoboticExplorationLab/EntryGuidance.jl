@@ -86,12 +86,13 @@ u_traj[3,:] .= dt0*ones(N-1)
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integration=EntryVehicleRK)
 
-solver = AugmentedLagrangianSolver(prob)
-solver.solver_uncon.opts.max_cost_value = 1e15
-solver.solver_uncon.opts.bp_reg_initial = 1e-6
-solver.solver_uncon.opts.bp_reg_min = 1e-6
+solver = ALTROSolver(prob)
+solver.opts.max_cost_value = 1e15
+solver.opts.bp_reg_initial = 1e-6
+solver.opts.bp_reg_min = 1e-6
 solver.opts.constraint_tolerance = 1e-2
 solver.opts.cost_tolerance_intermediate = 1e-2
+solver.opts.projected_newton = false
 solver.opts.verbose = true
 solve!(solver)
 
@@ -136,7 +137,7 @@ end
 
 
 using Plots
-pyplot()
+#pyplot()
 
 p1 = plot(t_traj, alt, lw=2, legend=false)
 xlabel!("Time (sec)")
