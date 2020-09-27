@@ -14,7 +14,7 @@ struct EntryVehicle{T} <: TO.AbstractModel
 end
 
 function RD.dynamics(model::EntryVehicle, x, u)
-    α = 15.0*pi/180
+    α = u[3]
     σ̇ = u[1]-u[2]
     return [EG.dynamics(x[1:6], EG.angles_input([α, x[7]],x[1:6],model.evmodel), model.evmodel); σ̇]
 end
@@ -26,7 +26,7 @@ abstract type EntryVehicleRK <: RD.Explicit end
 function RD.discrete_dynamics(::Type{EntryVehicleRK}, model::EntryVehicle,
         x::StaticVector, u::StaticVector, t, dt)
 
-    h = u[3]/3600.0 #u is in seconds, dynamics are in hours
+    h = u[4]/3600.0 #u is in seconds, dynamics are in hours
 
     k1 = RD.dynamics(model, x,             u)*h;
     k2 = RD.dynamics(model, x + k1/2,      u)*h;
@@ -35,7 +35,7 @@ function RD.discrete_dynamics(::Type{EntryVehicleRK}, model::EntryVehicle,
     return x + (k1 + 4*k2 + k3)/6
 end
 
-Base.size(::EntryVehicle) = 7,3
+Base.size(::EntryVehicle) = 7,4
 
 model = EntryVehicle(CartesianMSLModel())
 n,m = size(model)
@@ -49,7 +49,7 @@ r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
 V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 γ0 = -15.474*(pi/180.0) #Flight path angle at interface
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
-α = 15.0*pi/180 #derived from MSL initial L/D = 0.24
+α0 = 15.0*pi/180 #derived from MSL initial L/D = 0.24
 σ = 0.0*pi/180 #this is totally made up
 x0 = SVector{n}([r0; v0; σ])
 
@@ -61,10 +61,10 @@ xf = SVector{n}([rf; vf; σ])
 
 #Cost function
 Q = Diagonal(SVector{n}(zeros(n)))
-R = Diagonal(SVector{m}([0.001, 0.001, 0.1]))
+R = Diagonal(SVector{m}([0.00001, 0.00001, 1, 0.1]))
 H = zeros(m,n)
 q = -Q*xf
-r = SA[100.0, 100.0, 0.0]
+r = SA[300.0, 300.0, -R[3,3]*α0, -R[4,4]*dt0]
 c = 0.0
 stage_cost = DiagonalCost(Q,R,H,q,r,c,terminal=false)
 
@@ -77,12 +77,13 @@ obj = Objective(stage_cost,terminal_cost,N)
 cons = TO.ConstraintList(n,m,N)
 ∞ = Inf64
 add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,-pi],x_max=SA[∞,∞,∞,∞,∞,∞,pi]),1:N)
-add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,2.0],u_max=[∞,∞,3.0]),1:(N-1))
+add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,10.0*pi/180,2.0],u_max=[∞,∞,20.0*pi/180,3.0]),1:(N-1))
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 #Initial Controls
 u_traj = ones(m,N-1)
-u_traj[3,:] .= dt0*ones(N-1)
+u_traj[3,:] .= 15.0*pi/180
+u_traj[4,:] .= dt0*ones(N-1)
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integration=EntryVehicleRK)
 
@@ -91,7 +92,7 @@ solver.opts.max_cost_value = 1e15
 solver.opts.bp_reg_initial = 1e-6
 solver.opts.bp_reg_min = 1e-6
 solver.opts.constraint_tolerance = 1e-2
-solver.opts.cost_tolerance_intermediate = 1e-3
+solver.opts.cost_tolerance_intermediate = 1e-4
 solver.opts.projected_newton = false
 solver.opts.verbose = true
 solve!(solver)
@@ -108,17 +109,16 @@ x_traj = zeros(n,N)
 # #     x_traj[:,k+1] .= discrete_dynamics(EntryVehicleRK,model,SVector{n}(x_traj[:,k]),SVector{m}(U0[:,k]),0.0,2.0)
 # # end
 alt = zeros(N)
-# #AoA = zeros(N)
 bank = zeros(N)
 #
 for k = 1:N
     x_traj[:,k] .= X[k]
     alt[k] = norm(x_traj[1:3,k])-Rm
-    #AoA[k] = x_traj[7,k]
     bank[k] = x_traj[7,k]
 end
 
 u_traj = zeros(m,N-1)
+AoA = zeros(N-1)
 # # u_traj = U0
 σ̇ = zeros(N-1)
 dt = zeros(N-1)
@@ -128,7 +128,8 @@ cross_range = zeros(N)
 for k = 1:(N-1)
     u_traj[:,k] .= U[k]
     σ̇[k] = u_traj[1,k]-u_traj[2,k]
-    dt[k] = u_traj[3,k]
+    AoA[k] = u_traj[3,k]
+    dt[k] = u_traj[4,k]
     t_traj[k+1] = t_traj[k] + dt[k]
     down_range[k+1] = down_range[k] + norm(x_traj[1:3,k+1] - x_traj[1:3,k])
     cross_range[k+1] = cross_range[k] + (cross(r0,v0)/norm(cross(r0,v0)))'*(x_traj[1:3,k+1] - x_traj[1:3,k])
@@ -167,5 +168,9 @@ plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false)
 xlabel!("Time (sec)")
 ylabel!("u")
 # savefig("bankdot_plot.pdf")
+
+plot(t_traj[1:N-1], (180/pi)*AoA, lw=2, legend=false)
+xlabel!("Time (sec)")
+ylabel!("AoA")
 
 plot(dt)
