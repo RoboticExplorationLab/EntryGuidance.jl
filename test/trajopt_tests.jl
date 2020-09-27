@@ -91,7 +91,7 @@ solver.opts.max_cost_value = 1e15
 solver.opts.bp_reg_initial = 1e-6
 solver.opts.bp_reg_min = 1e-6
 solver.opts.constraint_tolerance = 1e-2
-solver.opts.cost_tolerance_intermediate = 1e-2
+solver.opts.cost_tolerance_intermediate = 1e-3
 solver.opts.projected_newton = false
 solver.opts.verbose = true
 solve!(solver)
