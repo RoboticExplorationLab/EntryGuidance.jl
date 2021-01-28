@@ -81,7 +81,7 @@ add_constraint!(cons, BoundConstraint(n,m,u_min=[0.0,0.0,2.0],u_max=[∞,∞,3.0
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 #Initial Controls
-u_traj = ones(m,N-1)
+u_traj = randn(m,N-1)
 u_traj[3,:] .= dt0*ones(N-1)
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integration=EntryVehicleRK)
@@ -93,7 +93,7 @@ solver.opts.bp_reg_min = 1e-6
 solver.opts.constraint_tolerance = 1e-2
 solver.opts.cost_tolerance_intermediate = 1e-4
 solver.opts.projected_newton = false
-solver.opts.verbose = true
+solver.opts.verbose = 2
 solve!(solver)
 
 X = states(solver)
@@ -135,37 +135,50 @@ for k = 1:(N-1)
 end
 
 
+mat"
+figure
+hold on
+plot($t_traj,$alt)
+hold off
+"
 
-using Plots
-#pyplot()
+mat"
+figure
+hold on
+plot($t_traj,$down_range)
+hold off
+"
 
-p1 = plot(t_traj, alt, lw=2, legend=false)
-xlabel!("Time (sec)")
-ylabel!("Altitude (km)")
-# savefig("altitude_plot.pdf")
-
-p2 = plot(t_traj, down_range, lw=2, legend=false)
-xlabel!("Time (sec)")
-ylabel!("Down Range (km)")
-# savefig("range_plot.pdf")
-
-p3 = plot(t_traj, cross_range, lw=2, legend=false)
-xlabel!("Time (sec)")
-ylabel!("Cross Range (km)")
-# savefig("cross_plot.pdf")
-
-plot(p2,p3, layout=(2,1))
-plot!(size=(600,500))
-# savefig("range_plot.pdf")
-
-plot(t_traj, bank*(180/pi), lw=2, legend=false)
-xlabel!("Time (sec)")
-ylabel!("Bank Angle (deg)")
-# savefig("bank_plot.pdf")
-
-plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false)
-xlabel!("Time (sec)")
-ylabel!("u")
-# savefig("bankdot_plot.pdf")
-
-plot(dt)
+# using Plots
+# #pyplot()
+#
+# p1 = plot(t_traj, alt, lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Altitude (km)")
+# # savefig("altitude_plot.pdf")
+#
+# p2 = plot(t_traj, down_range, lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Down Range (km)")
+# # savefig("range_plot.pdf")
+#
+# p3 = plot(t_traj, cross_range, lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Cross Range (km)")
+# # savefig("cross_plot.pdf")
+#
+# plot(p2,p3, layout=(2,1))
+# plot!(size=(600,500))
+# # savefig("range_plot.pdf")
+#
+# plot(t_traj, bank*(180/pi), lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("Bank Angle (deg)")
+# # savefig("bank_plot.pdf")
+#
+# plot(t_traj[1:N-1], (180/pi)*σ̇/3600, lw=2, legend=false)
+# xlabel!("Time (sec)")
+# ylabel!("u")
+# # savefig("bankdot_plot.pdf")
+#
+# plot(dt)
