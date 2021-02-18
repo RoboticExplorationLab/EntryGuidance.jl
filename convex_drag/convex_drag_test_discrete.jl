@@ -22,10 +22,19 @@ max_drag_norm = .5*Cd*ρ*Area*dot(vk,vk)
 
 
 d = cvx.Variable(3)
-# drag_norm = cvx.Variable(1)
+Γ = cvx.Variable(1)
 vkp1 = cvx.Variable(3)
-problem = cvx.minimize(dot(vkp1,vkp1),[norm(d) <= max_drag_norm,
-                                       vkp1 == Ad[4:6,:]*[rk;vk] + Bd[4:6,:]*d    ])
+
+# dynamics constraint
+dyn_con = vkp1 == Ad[4:6,:]*[rk;vk] + Bd[4:6,:]*d
+
+α = .5*ρ*Cd*Area
+# drag constraints
+con1 = norm(d)          <= Γ
+con2 = α*dot(vkp1,vkp1) <= Γ
+problem = cvx.minimize(dot(vkp1,vkp1),[con1,
+                                       con2,
+                                       dyn_con])
 
 # cvx.solve!(problem, () -> COSMO.Optimizer())
 cvx.solve!(problem, () -> Mosek.Optimizer())
