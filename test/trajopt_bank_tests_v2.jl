@@ -79,7 +79,7 @@ obj = Objective(stage_cost,terminal_cost,N)
 cons = TO.ConstraintList(n,m,N)
 ∞ = Inf64
 add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,-pi],x_max=SA[∞,∞,∞,∞,∞,∞,pi]),1:N)
-add_constraint!(cons, BoundConstraint(n,m,u_min=[-∞,-∞,2.0],u_max=[∞,∞,3.0]),1:(N-1))
+add_constraint!(cons, BoundConstraint(n,m,u_min=[-∞,-∞,0.5],u_max=[∞,∞,3.0]),1:(N-1))
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 # linear inequality constraint
@@ -97,13 +97,19 @@ prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integr
 
 solver = ALTROSolver(prob)
 solver.opts.max_cost_value = 1e15
+solver.opts.bp_reg = true
 solver.opts.bp_reg_initial = 1e-6
 solver.opts.bp_reg_min = 1e-6
 solver.opts.constraint_tolerance = 1e-3
 solver.opts.cost_tolerance_intermediate = 1e-6
 solver.opts.projected_newton = false
-solver.opts.verbose = 2
-solve!(solver)
+solver.opts.verbose = 1
+solver.opts.iterations = 10000
+solver.opts.iterations_inner = 1000
+# solver.opts.penalty_initial = 1e-2
+# solver.opts.iterations_outer = 40
+# solver.opts.iterations_linesearch = 8
+@time solve!(solver)
 
 X = states(solver)
 U = controls(solver)
