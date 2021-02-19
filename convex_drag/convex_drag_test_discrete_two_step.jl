@@ -38,5 +38,22 @@ end
 
 # this is convex and it solves, but there is nothing stopping Γ from going
 # to a huge number and allowing unrealistic drag.
-problem = cvx.minimize( sumsquares(vec(v)), cons_list)
-cvx.solve!(problem, () -> COSMO.Optimizer(max_iter = 100000))
+problem = cvx.minimize( sumsquares(vec(v)) + 1e3*sum(Γ), cons_list)
+cvx.solve!(problem, () -> COSMO.Optimizer(max_iter = 100000))# NOTE: fails
+# cvx.solve!(problem, () -> Mosek.Optimizer())                 # NOTE: succeeds
+
+#
+# # now we get the true solution
+# r_tru = zeros(3,3)
+# v_tru = zeros(3,3)
+# d_tru = zeros(3,2)
+# r_tru[:,1] = copy(rk)
+# v_tru[:,1] = copy(vk)
+#
+# for i = 1:2
+#     v = v_tru[:,i]
+#     d_tru[:,i] = -.5*ρ*Cd*Area*dot(v,v)*normalize(v)
+#     next_state = Ad*[r_tru[:,i];v_tru[:,i]] + Bd*d_tru[:,i]
+#     r_tru[:,i+1] = next_state[1:3]
+#     v_tru[:,i+1] = next_state[4:6]
+# end
