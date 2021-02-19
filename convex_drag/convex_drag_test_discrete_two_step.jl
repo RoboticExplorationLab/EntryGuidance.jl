@@ -33,9 +33,10 @@ for i = 1:2
     # we're trying to replicate this: |d| ≤ .5*ρ*Cd*A|v|² (non-convex)
     push!(cons_list, norm(d[:,i])<= Γ[i])
     push!(cons_list, .5*ρ*Cd*Area*dot(v[:,i],v[:,i]) <= Γ[i])
+    #NOTE: our convex inequalities must be [norm(z)<= ...] or [z'*Q*z <= ...]
 end
 
-# this is convex, and it solves, but there is nothing stopping Γ from going
-# to a huge number, and allowing a large drag.
+# this is convex and it solves, but there is nothing stopping Γ from going
+# to a huge number and allowing unrealistic drag.
 problem = cvx.minimize( sumsquares(vec(v)), cons_list)
 cvx.solve!(problem, () -> COSMO.Optimizer(max_iter = 100000))
