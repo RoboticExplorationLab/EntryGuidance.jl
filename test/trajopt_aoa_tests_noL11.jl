@@ -78,7 +78,7 @@ add_constraint!(cons, BoundConstraint(n,m,u_min=[-âˆž,10.0*pi/180,2.0],u_max=[âˆ
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
 #Initial Controls
-u_traj = ones(m,N-1)
+u_traj = zeros(m,N-1)
 u_traj[2,:] .= 15.0*pi/180
 u_traj[3,:] .= dt0*ones(N-1)
 
@@ -177,128 +177,114 @@ hold off
 # plot($dt)
 # hold off
 # "
-
-function find_closest(X,x)
-    dist = [norm(x - X[i]) for i = 1:length(X)]
-    return argmin(dist)
-end
-r_w = 1e2
-v_w = 1e-2
-Q = Diagonal(SA[r_w,r_w,r_w,v_w,v_w,v_w,1e-9])
-R = Diagonal(SA[1e5,1e5])
-
-tp, Xp, Up, Kp = getK(X,U,t_traj,Q,R)
-@show "done"
-model = EntryVehicle_fixed_time(CartesianMSLModel())
-n,m = size(model)
-
-dt = 0.1
-tf = 250
-t_vec = 0:dt:tf
-N = length(t_vec)
-X = NaN*[@SVector zeros(7) for i = 1:N]
-U = NaN*[@SVector zeros(2) for i = 1:N]
-tscale = 3600
-using Random
-Random.seed!(1);
-X[1] = x0 + SVector{7}([10*normalize(randn(3));.0001*tscale*normalize(randn(3));0])
-# X[1] = x0
-for i = 1:(N-10)
-    # idx = find_closest(Xp,X[i])
-    # @show idx
-    x = copy(X[i])
-    ran = 4:6
-    dist = [norm(x[ran] - Xp[k][ran]) for k = 1:length(X)]
-    idx = argmin(dist)
-    # idx = copy(i)
-    # if abs(idx1-idx)>500
-    #     @infiltrate
-    #     error()
-    # end
-    # if idx == 2501
-    #     @infiltrate
-    #     error()
-    # end
-    # idx = copy(i)
-    dx = X[i]  - Xp[idx]
-    U[i] = Up[idx][1:2] - Kp[idx]*dx
-    z = KnotPoint(X[i],U[i],dt)
-    X[i+1] = discrete_dynamics(EntryVehicleRK_fixed_time,model,z)
-end
-
-
-using MATLAB
-using Attitude
-xm_altro = mat_from_vec(states(solver))
-xm_sim = mat_from_vec(X)
-mat"
-
-figure
-hold on
-sgtitle('MCMF Position')
-subplot(3,1,1)
-hold on
-plot($t_traj, $xm_altro(1,:))
-plot($t_vec,$xm_sim(1,:))
-subplot(3,1,2)
-hold on
-plot($t_traj, $xm_altro(2,:))
-plot($t_vec,$xm_sim(2,:))
-subplot(3,1,3)
-hold on
-plot($t_traj, $xm_altro(3,:))
-plot($t_vec,$xm_sim(3,:))
-hold off
-"
-mat"
-figure
-sgtitle('MCMF Velocity')
-hold on
-subplot(3,1,1)
-hold on
-plot($t_traj, $xm_altro(4,:))
-plot($t_vec,$xm_sim(4,:))
-subplot(3,1,2)
-hold on
-plot($t_traj, $xm_altro(5,:))
-plot($t_vec,$xm_sim(5,:))
-subplot(3,1,3)
-hold on
-plot($t_traj, $xm_altro(6,:))
-plot($t_vec,$xm_sim(6,:))
-hold off
-"
-
-
-um_altro = mat_from_vec(controls(solver))
-um_sim = mat_from_vec(U)
-
-mat"
-figure
-hold on
-subplot(2,1,1)
-hold
-title('Bank Angle Derivative')
-plot($t_traj(1:end-1),$um_altro(1,:))
-plot($t_vec,$um_sim(1,:))
-
-subplot(2,1,2)
-title('Angle of Attack')
-hold on
-plot($t_traj(1:end-1),$um_altro(2,:))
-plot($t_vec,$um_sim(2,:))
-
-hold off
-"
-
-# X_altro = states(solver)
-# rnorm = [norm(X_altro[i][1:3]) for i = 1:length(X_altro)]
-# vnorm = [norm(X_altro[i][4:6]) for i = 1:length(X_altro)]
+#
+# r_w = 1e-2
+# v_w = 1e2
+# Q = Diagonal(SA[r_w,r_w,r_w,v_w,v_w,v_w,1e-9])
+# R = Diagonal(SA[1e5,1e5])
+#
+# new_t, x_int, u_int, K_int, K_vec = getK(X,U,t_traj,Q,R)
+# @show "done"
+# model = EntryVehicle_fixed_time(CartesianMSLModel())
+# n,m = size(model)
+#
+# dt = 1.0
+# tf = 250
+# t_vec = 0:dt:tf
+# N = length(t_vec)
+# X = [@SVector zeros(7) for i = 1:N]
+# U = [@SVector zeros(2) for i = 1:N]
+# tscale = 3600
+# using Random
+# Random.seed!(1);
+# X[1] = x0 #+ SVector{7}([10*normalize(randn(3));.1*tscale*normalize(randn(3));0])
+# # X[1] = x0
+# for i = 1:(N-1)
+#
+#     t = t_vec[i]
+#     dx = X[i]  - x_int(t)
+#     # u = u_int(t) - K_int(t)*dx
+#     U[i] = u_int(t)[1:2] #- K_vec[Int(floor(t))+1]*dx
+#
+#     # if i == 60
+#     #     @infiltrate
+#     #     error()
+#     # end
+#     z = KnotPoint(X[i],U[i],dt)
+#     X[i+1] = discrete_dynamics(EntryVehicleRK_fixed_time,model,z)
+# end
+#
+#
+# using MATLAB
+# using Attitude
+# xm_altro = mat_from_vec(states(solver))
+# xm_sim = mat_from_vec(X)
+# mat"
+#
+# figure
+# hold on
+# subplot(3,1,1)
+# hold on
+# plot($t_traj, $xm_altro(1,:))
+# plot($t_vec,$xm_sim(1,:))
+# subplot(3,1,2)
+# hold on
+# plot($t_traj, $xm_altro(2,:))
+# plot($t_vec,$xm_sim(2,:))
+# subplot(3,1,3)
+# hold on
+# plot($t_traj, $xm_altro(3,:))
+# plot($t_vec,$xm_sim(3,:))
+# hold off
+# "
+# mat"
+# figure
+# hold on
+# subplot(3,1,1)
+# hold on
+# plot($t_traj, $xm_altro(4,:))
+# plot($t_vec,$xm_sim(4,:))
+# subplot(3,1,2)
+# hold on
+# plot($t_traj, $xm_altro(5,:))
+# plot($t_vec,$xm_sim(5,:))
+# subplot(3,1,3)
+# hold on
+# plot($t_traj, $xm_altro(6,:))
+# plot($t_vec,$xm_sim(6,:))
+# hold off
+# "
+#
+#
+# um_altro = mat_from_vec(controls(solver))
+# um_sim = mat_from_vec(U)
 #
 # mat"
 # figure
 # hold on
-# plot($t_traj,$rnorm)
-# plot($t_traj,$vnorm)
+# subplot(2,1,1)
+# hold
+# title('Bank Angle Derivative')
+# plot($t_traj(1:end-1),$um_altro(1,:))
+# plot($t_vec,$um_sim(1,:))
+#
+# subplot(2,1,2)
+# title('Angle of Attack')
+# hold on
+# plot($t_traj(1:end-1),$um_altro(2,:))
+# plot($t_vec,$um_sim(2,:))
+#
 # hold off
 # "
+#
+# # X_altro = states(solver)
+# # rnorm = [norm(X_altro[i][1:3]) for i = 1:length(X_altro)]
+# # vnorm = [norm(X_altro[i][4:6]) for i = 1:length(X_altro)]
+# #
+# # mat"
+# # figure
+# # hold on
+# # plot($t_traj,$rnorm)
+# # plot($t_traj,$vnorm)
+# # hold off
+# # "

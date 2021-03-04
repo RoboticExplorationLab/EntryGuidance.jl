@@ -33,7 +33,7 @@ function getK(X,U,t_traj,Q,R)
     x_int = LinearInterpolation(t_traj,X)
     u_int = LinearInterpolation(t_traj[1:end-1],U)
 
-    dt = 1.0
+    dt = 0.1
     new_t = 0:dt:250
 
     N = length(new_t)
@@ -70,9 +70,9 @@ function getK(X,U,t_traj,Q,R)
         S[k] = Q + K[k]'*R*K[k] + (Ak - Bk*K[k])'*S[k+1]*(Ak - Bk*K[k])
     end
 
-    # get a K object
-    K_itp = interpolate(K, BSpline(Linear())) #works
-    K_int = scale(K_itp, new_t)
+    # # get a K object
+    # K_itp = interpolate(K, BSpline(Linear())) #works
+    # K_int = scale(K_itp, new_t)
 
-    return new_t, x_int, u_int, K_itp, K
+    return new_t, new_x, new_u, K
 end
