@@ -8,6 +8,9 @@ using RobotDynamics
 const RD = RobotDynamics
 using Altro
 using Test
+using MATLAB
+using Attitude
+using Infiltrator
 
 struct EntryVehicle{T} <: TO.AbstractModel
     evmodel::EG.CartesianModel{T}
@@ -178,6 +181,21 @@ hold off
 # hold off
 # "
 
+x_int = LinearInterpolation(t_traj,X)
+u_int = LinearInterpolation(t_traj[1:end-1],U)
+
+dt = 0.1
+new_t = 0:dt:250
+
+N = length(new_t)
+
+new_x = x_int(new_t)
+new_u = u_int(new_t)
+
+traj = (X = new_x, U = new_u, t = new_t, dt = dt)
+# error()
+@save "goodtraj.jld2" traj
+error()
 function find_closest(X,x)
     dist = [norm(x - X[i]) for i = 1:length(X)]
     return argmin(dist)
@@ -207,7 +225,7 @@ for i = 1:(N-10)
     # idx = find_closest(Xp,X[i])
     # @show idx
     x = copy(X[i])
-    ran = 4:6
+    ran = 1:3
     dist = [norm(x[ran] - Xp[k][ran]) for k = 1:length(X)]
     idx = argmin(dist)
     # idx = copy(i)
@@ -220,7 +238,12 @@ for i = 1:(N-10)
     #     error()
     # end
     # idx = copy(i)
-    dx = X[i]  - Xp[idx]
+    dx = Array(X[i]  - Xp[idx])
+    y = normalize(X[i][4:6])
+    # @infiltrate
+    # error()
+    dx[1:3] = dx[1:3] - dot(dx[1:3],y)*y
+    dx[4:6] = dx[4:6] - dot(dx[4:6],y)*y
     U[i] = Up[idx][1:2] - Kp[idx]*dx
     z = KnotPoint(X[i],U[i],dt)
     X[i+1] = discrete_dynamics(EntryVehicleRK_fixed_time,model,z)
