@@ -195,15 +195,15 @@ new_u = u_int(new_t)
 traj = (X = new_x, U = new_u, t = new_t, dt = dt)
 # error()
 @save "goodtraj.jld2" traj
-error()
+# error()
 function find_closest(X,x)
     dist = [norm(x - X[i]) for i = 1:length(X)]
     return argmin(dist)
 end
-r_w = 1e2
+r_w = 1e4
 v_w = 1e-2
 Q = Diagonal(SA[r_w,r_w,r_w,v_w,v_w,v_w,1e-9])
-R = Diagonal(SA[1e5,1e5])
+R = Diagonal(SA[1e1,1e1])
 
 tp, Xp, Up, Kp = getK(X,U,t_traj,Q,R)
 @show "done"
@@ -219,7 +219,8 @@ U = NaN*[@SVector zeros(2) for i = 1:N]
 tscale = 3600
 using Random
 Random.seed!(1);
-X[1] = x0 + SVector{7}([10*normalize(randn(3));.0001*tscale*normalize(randn(3));0])
+re_hist = NaN*[zeros(3) for i = 1:N]
+X[1] = x0 + SVector{7}([100*normalize(randn(3));.0001*tscale*normalize(randn(3));0])
 # X[1] = x0
 for i = 1:(N-10)
     # idx = find_closest(Xp,X[i])
@@ -228,16 +229,8 @@ for i = 1:(N-10)
     ran = 1:3
     dist = [norm(x[ran] - Xp[k][ran]) for k = 1:length(X)]
     idx = argmin(dist)
-    # idx = copy(i)
-    # if abs(idx1-idx)>500
-    #     @infiltrate
-    #     error()
-    # end
-    # if idx == 2501
-    #     @infiltrate
-    #     error()
-    # end
-    # idx = copy(i)
+    re_hist[i], v_e = get_lvlh_errors(Xp[idx][1:3],Xp[idx][4:6],X[i][1:3],X[i][4:6])
+
     dx = Array(X[i]  - Xp[idx])
     y = normalize(X[i][4:6])
     # @infiltrate
@@ -249,49 +242,57 @@ for i = 1:(N-10)
     X[i+1] = discrete_dynamics(EntryVehicleRK_fixed_time,model,z)
 end
 
+rem = mat_from_vec(re_hist)
 
-using MATLAB
-using Attitude
-xm_altro = mat_from_vec(states(solver))
-xm_sim = mat_from_vec(X)
-mat"
-
-figure
-hold on
-sgtitle('MCMF Position')
-subplot(3,1,1)
-hold on
-plot($t_traj, $xm_altro(1,:))
-plot($t_vec,$xm_sim(1,:))
-subplot(3,1,2)
-hold on
-plot($t_traj, $xm_altro(2,:))
-plot($t_vec,$xm_sim(2,:))
-subplot(3,1,3)
-hold on
-plot($t_traj, $xm_altro(3,:))
-plot($t_vec,$xm_sim(3,:))
-hold off
-"
 mat"
 figure
-sgtitle('MCMF Velocity')
 hold on
-subplot(3,1,1)
-hold on
-plot($t_traj, $xm_altro(4,:))
-plot($t_vec,$xm_sim(4,:))
-subplot(3,1,2)
-hold on
-plot($t_traj, $xm_altro(5,:))
-plot($t_vec,$xm_sim(5,:))
-subplot(3,1,3)
-hold on
-plot($t_traj, $xm_altro(6,:))
-plot($t_vec,$xm_sim(6,:))
+plot($rem(1:2,:)')
 hold off
 "
 
+# using MATLAB
+# using Attitude
+# xm_altro = mat_from_vec(states(solver))
+# xm_sim = mat_from_vec(X)
+# mat"
+#
+# figure
+# hold on
+# sgtitle('MCMF Position')
+# subplot(3,1,1)
+# hold on
+# plot($t_traj, $xm_altro(1,:))
+# plot($t_vec,$xm_sim(1,:))
+# subplot(3,1,2)
+# hold on
+# plot($t_traj, $xm_altro(2,:))
+# plot($t_vec,$xm_sim(2,:))
+# subplot(3,1,3)
+# hold on
+# plot($t_traj, $xm_altro(3,:))
+# plot($t_vec,$xm_sim(3,:))
+# hold off
+# "
+# mat"
+# figure
+# sgtitle('MCMF Velocity')
+# hold on
+# subplot(3,1,1)
+# hold on
+# plot($t_traj, $xm_altro(4,:))
+# plot($t_vec,$xm_sim(4,:))
+# subplot(3,1,2)
+# hold on
+# plot($t_traj, $xm_altro(5,:))
+# plot($t_vec,$xm_sim(5,:))
+# subplot(3,1,3)
+# hold on
+# plot($t_traj, $xm_altro(6,:))
+# plot($t_vec,$xm_sim(6,:))
+# hold off
+# "
+#
 
 um_altro = mat_from_vec(controls(solver))
 um_sim = mat_from_vec(U)
