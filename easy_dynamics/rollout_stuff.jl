@@ -1,32 +1,32 @@
 
 
-function find_impact(t,z,z_itp)
-
-    z1 = z[end-1]
-
-    t1 = t[end-1]
-    t2 = t[end]
-
-    tg = t1
-    Δt = 1e-5
-    for i = 1:5
-        zg = z_itp(tg)
-        dz = (z_itp(tg + Δt) - z_itp(tg))/Δt
-        tg -= zg/dz
-
-        # error checking and convergence
-        if tg > t2 || tg<t1
-            @error "impact time is outside acceptable range"
-        end
-        if abs(zg)<1e-5
-            break
-        end
-        if i == 5
-            @warn "max iters reached on impact timing"
-        end
-    end
-    return tg
-end
+# function find_impact(t,z,z_itp)
+#
+#     z1 = z[end-1]
+#
+#     t1 = t[end-1]
+#     t2 = t[end]
+#
+#     tg = t1
+#     Δt = 1e-5
+#     for i = 1:5
+#         zg = z_itp(tg)
+#         dz = (z_itp(tg + Δt) - z_itp(tg))/Δt
+#         tg -= zg/dz
+#
+#         # error checking and convergence
+#         if tg > t2 || tg<t1
+#             @error "impact time is outside acceptable range"
+#         end
+#         if abs(zg)<1e-5
+#             break
+#         end
+#         if i == 5
+#             @warn "max iters reached on impact timing"
+#         end
+#     end
+#     return tg
+# end
 
 function rollout(x0,U_in,dt)
     N = 1000
@@ -64,8 +64,9 @@ function rollout(x0,U_in,dt)
     t_vec = t_vec[1:end_idx]
 
     # find impact time
-    xm = mat_from_vec(X)
-    z_itp = CubicSplineInterpolation(t_vec,xm[3,:])
-    t_impact = find_impact(t_vec,xm[3,:],z_itp)
+    # xm = mat_from_vec(X)
+    # z_itp = CubicSplineInterpolation(t_vec,xm[3,:])
+    # t_impact = find_impact(t_vec,xm[3,:],z_itp)
+    t_impact = 0
     return X, U, t_vec, t_impact
 end

@@ -9,7 +9,7 @@ function get_max_L(x)
     v = x[4:6]
     Area = 1.0  # m²
     m = 1000 # kg
-    ρ = 1.2*10 # kg/m³
+    ρ = 1.2*1 # kg/m³
     # Cl = 1.42*α (in radians)
     Cl = 1.42*deg2rad(30)
     # this is maximum allowable lift

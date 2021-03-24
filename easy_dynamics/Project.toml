@@ -2,6 +2,7 @@
 Attitude = "8b3d34c0-dc4a-4a06-a8c8-4215f240a648"
 COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
+ECOS = "e2685f51-7e38-5353-a97d-a921fd2c8199"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
