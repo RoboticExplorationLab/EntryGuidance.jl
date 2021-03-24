@@ -37,9 +37,18 @@ function rollout(x0,U_in,dt)
     t_vec = 0:dt:((N-1)*dt)
     for i = 1:(length(X)-1)
 
-        # give us a control
-        U[i] = i>N ? U_in[i] : U_in[end]
+        if i > length(U_in)
+            U[i] = deepcopy(U_in[end])
+            @warn "went past planned controls"
+        else
+            U[i] = deepcopy(U_in[i])
+            # U[i] = deepcopy(U_in[end])
+        end
+
+        # step forward in sim
         X[i+1] = rk4(X[i],U[i],dt)
+
+        # check for hitting the ground
         if X[i+1][3] < 0
             end_idx = i+1
             break

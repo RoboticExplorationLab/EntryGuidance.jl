@@ -9,6 +9,33 @@ function eg_mpc(A,B,X,U)
     @assert (length(A) == length(U))
     N = length(X)
     x0 = copy(X[1])
+
+    xm = mat_from_vec(X)
+    um = mat_from_vec(U)
+
+    mpc = (A = A, B = B, X = X, U = U)
+    # @save "mpc.jld2" mpc
+    mat"
+    figure
+    hold on
+    title('Pre-Positions')
+    plot($xm(1:3,:)')
+    hold off
+    "
+    mat"
+    figure
+    hold on
+    title('Pre-Velocities')
+    plot($xm(1:3,:)')
+    hold off
+    "
+    mat"
+    figure
+    hold on
+    title('Pre-controls')
+    plot($um')
+    hold off
+    "
     # max lift vector for each time
     L_max = zeros(N)
     for i = 1:N
@@ -38,7 +65,7 @@ function eg_mpc(A,B,X,U)
     cons = Constraint[ δx[:,1]==δx0 ]
 
     for i = 1:N-1
-        push!(cons, δx[:,i+1] == A[i]*δx[:,i] + B[i]*δu[:,i])
+        push!(cons, δx[:,i+1] == sparse(A[i])*δx[:,i] + B[i]*δu[:,i])
     end
 
     # lift vector constraints
@@ -47,19 +74,51 @@ function eg_mpc(A,B,X,U)
         # push!(cons, sumsquares(U[i] + δu[:,i]) <= L_max[i]^2)
     end
 
-    α = 1e3
-    # problem = minimize(α*norm(X[N][1:2] + δx[1:2,N]) + norm(vec(mat_from_vec(U) + δu)), cons)
-    problem = minimize(α*sumsquares(X[N][1:2] + δx[1:2,N]) + sumsquares(vec(mat_from_vec(U) + δu)), cons)
-    Convex.solve!(problem, () -> Mosek.Optimizer())
+    # problem = minimize(norm(X[N][1:2] + δx[1:2,N]), cons)
+    α = 1e1
+    β = 1e2
+    # problem = minimize(α*norm(X[N][1:2] + δx[1:2,N]) + norm(vec(mat_from_vec(U) + δu)) + norm(vec(δu)), cons)
+    problem = minimize(α*norm(X[N][1:2] + δx[1:2,N]) + norm(vec(mat_from_vec(U) + δu)), cons)
+    # problem = minimize(α*sumsquares(X[N][1:2] + δx[1:2,N]) + sumsquares(vec(mat_from_vec(U) + δu)), cons)
+    # Convex.solve!(problem, () -> Mosek.Optimizer())
     # Convex.solve!(problem, () -> ECOS.Optimizer(abstol = 1e-9))
     # Convex.solve!(problem, () -> Gurobi.Optimizer())
     # Convex.solve!(problem, () -> COSMO.Optimizer(verbose = false))
-    # Convex.solve!(problem, () -> COSMO.Optimizer(verbose = false))
+    Convex.solve!(problem, () -> COSMO.Optimizer(eps_abs = 1e-12))
 
     cX = vec_from_mat(mat_from_vec(X) + evaluate(δx))
     cU = vec_from_mat(mat_from_vec(U) + evaluate(δu))
 
-    @info δx.value[3,end]
+    dx = δx.value
+    du = δu.value
+
+    naiveJ = α*norm(X[N][1:2]) + norm(vec(mat_from_vec(U)))
+    theirJ = α*norm(X[N][1:2] + dx[1:2,N]) + norm(vec(mat_from_vec(U) + du))
+    @info "naive J is $naiveJ"
+    @info "their J is $theirJ"
+    mat"
+    figure
+    hold on
+    title('Delta Position')
+    plot($dx(1:3,:)')
+    hold off
+    "
+    mat"
+    figure
+    hold on
+    title('Delta Velocity')
+    plot($dx(4:6,:)')
+    hold off
+    "
+    mat"
+    figure
+    hold on
+    title('Delta Control')
+    plot($du')
+    hold off
+    "
+    @infiltrate
+    @info δx.value[1:3,end]
     # @infiltrate
     # error()
     return cX, cU

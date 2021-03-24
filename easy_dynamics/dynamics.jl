@@ -6,10 +6,10 @@ function ezdynamics(x, u)
     v = x[4:6]
 
     #atmospheric density
-    ρ = 1.2*10 # kg/m³
+    ρ = 1.2*1 # kg/m³
 
     #Calculate drag acceleration
-    Cd = 2.2
+    Cd = 1.4
     A = 1.0  # m²
     m = 1000 # kg
     D = 0.5*Cd*ρ*A*dot(v,v)/m
@@ -22,11 +22,15 @@ function ezdynamics(x, u)
     g = [0;0;-9.8]
 
     #Aerodynamic acceleration
-    e1 = cross(r,v)
+    # i replaced r with the z axis
+    e1 = cross([0;0;1],v)
     e1 .= e1/norm(e1)
     e2 = cross(v,e1)
     e2 .= e2/norm(e2)
 
+    # @show e2
+
+    # @show e1
     # lift vector (we get to control this within allowable bounds)
     L_a = e1*u[1] + e2*u[2]
     D_a = -(D/norm(v))*v
@@ -40,7 +44,7 @@ function rk4(x_n,u,dt)
     k2 = dt*ezdynamics(x_n+k1/2,u)
     k3 = dt*ezdynamics(x_n+k2/2,u)
     k4 = dt*ezdynamics(x_n+k3,u)
-    return (x_n + (1/6)*(k1+ 2*k2 + 2*k3 + k4))
+    return (x_n + (1/6)*(k1 + 2*k2 + 2*k3 + k4))
 end
 
 function getAB(X,U,dt)
