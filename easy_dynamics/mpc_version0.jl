@@ -31,16 +31,54 @@ Usim = [zeros(2) for i = 1:T-1]
 
         # rollout current plan and find out when we dying
         Xr, Ur, t_vec, t_impact = rollout(Xsim[i],Uc,dt)
-        # U = U[1:(length(X)-1)]
+
         @show length(Xr)
         @show length(Ur)
-        @show Xr[3,end]
+        @show Xr[end][3]
 
         # jacobians
         A,B = getAB(Xr,Ur,dt)
 
         # MPC solve
-        Xc, Uc = eg_mpc(A,B,Xr,Ur,x0)
+        Xc, Uc = eg_mpc(A,B,Xr,Ur)
+
+        # @infiltrate
+        # testing stuff
+        cvxX = mat_from_vec(Xc)
+        cvxU = mat_from_vec(Uc)
+        # mat"
+        # figure
+        # hold on
+        # title('Positions')
+        # plot($cvxX(1:3,:)')
+        # hold off
+        # "
+        # mat"
+        # figure
+        # hold on
+        # title('Velocities')
+        # plot($cvxX(4:6,:)')
+        # hold off
+        # "
+        # mat"
+        # figure
+        # hold on
+        # title('Controls')
+        # plot($cvxU')
+        # hold off
+        # "
+        # mat"
+        # figure
+        # hold on
+        # title('Controls')
+        # plot($cvxU(1,:),$cvxU(2,:))
+        # hold off
+        # "
+        # @show cvxX[3,end]
+        # @infiltrate
+        # if i == 10
+        #     error()
+        # end
 
         # actual dynamics
         Usim[i] = copy(Uc[1])
