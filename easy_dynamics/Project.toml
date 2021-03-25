@@ -1,5 +1,6 @@
 [deps]
 Attitude = "8b3d34c0-dc4a-4a06-a8c8-4215f240a648"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 COSMO = "1e616198-aa4e-51ec-90a2-23f7fbd31d8d"
 Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
 ECOS = "e2685f51-7e38-5353-a97d-a921fd2c8199"
