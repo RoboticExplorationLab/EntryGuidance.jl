@@ -4,7 +4,7 @@ function getmaxL(model,x)
     ρ = atmospheric_density(r, model.evmodel)
     A = model.evmodel.vehicle.A
     m = model.evmodel.vehicle.m
-    Cl = lift_coefficient(deg2rad(30), model.evmodel)
+    Cl = lift_coefficient(deg2rad(20), model.evmodel)
     L = 0.5*Cl*ρ*A*dot(v,v)/m
     return L/model.uscale
 end

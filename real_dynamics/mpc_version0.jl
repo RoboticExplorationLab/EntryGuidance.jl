@@ -42,7 +42,7 @@ U = [@SArray zeros(2) for i = 1:N-1]
 X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
-    U[i] = getmaxL(model,X[i])*[0;.5]
+    U[i] = getmaxL(model,X[i])*[0;.41]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
@@ -56,13 +56,13 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 10
+T = 100
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [zeros(2) for i = 1:T-1]
-althist = []
-drhist = []
-crhist = []
+althist = [zeros(2) for i = 1:T-1]
+drhist = [zeros(2) for i = 1:T-1]
+crhist = [zeros(2) for i = 1:T-1]
 # MPC loop
 for i = 1:T-1
 
@@ -70,10 +70,10 @@ for i = 1:T-1
     Xr, Ur, t_vec, t_impact = rollout(model,deepcopy(Xsim[i]),Uc[2:end],dt)
     @assert Xsim[i] == Xr[1]
 
-    alt, dr, cr = postprocess(model::EntryVehicle,Xr,x0)
-    push!(althist,alt)
-    push!(drhist,dr)
-    push!(crhist,cr)
+    althist[i], drhist[i], crhist[i] = postprocess(model::EntryVehicle,Xr,x0)
+    # push!(althist,alt)
+    # push!(drhist,dr)
+    # push!(crhist,cr)
     # jacobians
     A,B = getAB(model,Xr,Ur,dt)
 
@@ -107,14 +107,14 @@ end
     # # plot($xm(1,1),$xm(2,1),'r*')
     # # hold off
     # # "
-    # um = mat_from_vec(Usim)
-    # mat"
-    # figure
-    # hold on
-    # title('Controls')
-    # plot($um')
-    # hold off
-    # "
+    um = mat_from_vec(Usim)
+    mat"
+    figure
+    hold on
+    title('Controls')
+    plot($um')
+    hold off
+    "
     # # mat"
     # # figure
     # # hold on
@@ -179,7 +179,8 @@ end
         plot(px,alt,'Color',rgb1 + drgb*(i-1)/length($althist),'linewidth',3)
         plot(px(1),alt(1),'r.','markersize',20)
     end
-    plot([0,700],ones( 2,1)*10,'r' )
+    plot([0,800],ones( 2,1)*10,'r' )
+    plot($xf_dr,10,'g.','markersize',20)
     xlabel('Downrange (km)')
     ylabel('Altitude (km)')
     hold off
