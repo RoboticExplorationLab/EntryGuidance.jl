@@ -6,6 +6,7 @@ using Attitude
 
 struct EntryVehicle{T}
     evmodel::EG.CartesianModel{T}
+    uscale::Float64
 end
 
 function postprocess(model::EntryVehicle,X,x0)
@@ -55,7 +56,7 @@ function rangedistances(model,x,x0)
 end
 
 # evmodel = CartesianMSLModel()
-model = EntryVehicle(CartesianMSLModel())
+model = EntryVehicle(CartesianMSLModel(),1e4)
 #Initial conditions for MSL
 Rm = model.evmodel.planet.R
 r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
@@ -78,7 +79,7 @@ function getmaxL(model,x)
     m = model.evmodel.vehicle.m
     Cl = lift_coefficient(deg2rad(30), model.evmodel)
     L = 0.5*Cl*ρ*A*dot(v,v)/m
-    return L
+    return L/model.uscale
 end
 
 function evdynamics(model::EntryVehicle, x, u)
@@ -116,7 +117,7 @@ function evdynamics(model::EntryVehicle, x, u)
     D_a = -(D/norm(v))*v #+ L*sin(σ)*e1 + L*cos(σ)*e2
     L_a = e1*u[1] + e2*u[2]
                       # this is rotating planet effects
-    v̇ = D_a + L_a + g #- 2*Ω̂*v - Ω̂*Ω̂*r
+    v̇ = D_a + model.uscale*L_a + g #- 2*Ω̂*v - Ω̂*Ω̂*r
 
     return [v; v̇]
 end
@@ -149,7 +150,7 @@ U = [zeros(2) for i = 1:N-1]
 X[1] = deepcopy(x0)
 
 for i = 1:(N-1)
-    U[i] = getmaxL(model,X[i])*normalize([0;1])
+    U[i] = getmaxL(model,X[i])*[0;.5]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude"
@@ -161,15 +162,15 @@ end
 # A,B = getAB(model,X,U,dt)
 # quick post process
 # alt = [altitude(model,X[i]) for i = 1:length(X)]
-# xm = mat_from_vec(X)
+xm = mat_from_vec(X)
 alt, dr, cr = postprocess(model::EntryVehicle,X,x0)
 
-mat"
-figure
-hold on
-plot($xm(1:3,:)')
-hold off
-"
+# mat"
+# figure
+# hold on
+# plot($xm(1:3,:)')
+# hold off
+# "
 
 mat"
 figure
@@ -189,5 +190,15 @@ plot($xf_dr,$xf_cr,'r.','markersize',20)
 xlabel('Downrange')
 ylabel('Crossrange')
 legend('Trajectory','Goal')
+hold off
+"
+
+um = mat_from_vec(U)
+
+mat"
+figure
+hold on
+plot($um')
+set(gca, 'YScale', 'log')
 hold off
 "
