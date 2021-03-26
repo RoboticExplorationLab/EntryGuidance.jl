@@ -14,17 +14,20 @@ function jump_mpc(model::EntryVehicle,X,U,A,B,xf)
     set_optimizer_attribute(jmodel, "MSK_DPAR_INTPNT_CO_TOL_REL_GAP",1e-15)
 
 
-    # get maximum lift
-    maxL = zeros(N-1)
-    for i = 1:N-1
-        maxL[i] = getmaxL(model,X[i])
-    end
-
-
     @variable(jmodel, δx[1:6,1:N])
     @variable(jmodel, δu[1:2,1:N-1])
 
     @constraint(jmodel,δx[:,1] .= zeros(6))
     for i = 1:N-1
         @constraint(jmodel, δx[:,i+1] .== A[i]*δx[:,i] + B[i]*δu[:,i])
+    end
+
+    # get maximum lift
+    maxL = zeros(N-1)
+    for i = 1:N-1
+        maxL[i] = getmaxL(model,X[i])
+    end
+
+    for i = 1:N-1
+        @constraint(jmodel, [maxL[i],δu[1,i],δu[2,i]] in SecondOrderCone())
     end

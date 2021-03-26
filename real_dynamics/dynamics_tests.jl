@@ -75,16 +75,7 @@ rf = Rf*[cos(7.869/Rf)*cos(631.979/Rf); cos(7.869/Rf)*sin(631.979/Rf); sin(7.869
 vf = zeros(3)
 xf = [rf;vf]
 
-function getmaxL(model,x)
-    r = x[1:3]
-    v = x[4:6]
-    ρ = atmospheric_density(r, model.evmodel)
-    A = model.evmodel.vehicle.A
-    m = model.evmodel.vehicle.m
-    Cl = lift_coefficient(deg2rad(30), model.evmodel)
-    L = 0.5*Cl*ρ*A*dot(v,v)/m
-    return L/model.uscale
-end
+
 
 function evdynamics(model::EntryVehicle, x, u)
 
@@ -228,7 +219,7 @@ x0 = copy(X[1])
 # set_optimizer_attribute(jmodel, "MSK_DPAR_INTPNT_CO_TOL_REL_GAP",1e-15)
 
 jmodel = Model(COSMO.Optimizer)
-# set_optimizer_attribute(jmodel, "eps_abs",1e-8)
+set_optimizer_attribute(jmodel, "check_termination",30)
 
 
 @variable(jmodel, δx[1:6,1:N])

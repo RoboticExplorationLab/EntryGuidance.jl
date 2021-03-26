@@ -10,152 +10,157 @@ using SuiteSparse
 using SparseArrays
 using Interpolations
 
+include(joinpath(@__DIR__,"dynamics.jl"))
+include(joinpath(@__DIR__,"rollout_stuff.jl"))
+include(joinpath(@__DIR__,"mpc.jl"))
+include(joinpath(@__DIR__,"post_process.jl"))
 
 function first_test()
 
-# x0 = [100,200,1000,13,15,-20.0]
-x0 = [-1200,-1200,1000,90,150,-20.0]
-Nr = 100
-Uc = [.1*zeros(2) for i = 1:2*Nr]
-dt = 0.5
-X, t_vec, t_impact = rollout(x0,Uc,dt)
-# U = U[1:(length(X)-1)]
+# evmodel = CartesianMSLModel()
+model = EntryVehicle(CartesianMSLModel(),1e4)
+#Initial conditions for MSL
+Rm = model.evmodel.planet.R
+r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
+V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
+γ0 = -15.474*(pi/180.0) #Flight path angle at interface
+v0 = V0*[sin(γ0), cos(γ0), 0.0]
+x0 = [r0;v0]
 
-# xm = mat_from_vec(tX)
-traj_hist = Array{Array{Float64,1},1}[]
-T = 40
+#Final conditions for MSL 631.979 km down range and 7.869 km cross-range from entry point
+Rf = Rm+10.0 #Parachute opens at 10 km altitude
+rf = Rf*[cos(7.869/Rf)*cos(631.979/Rf); cos(7.869/Rf)*sin(631.979/Rf); sin(7.869/Rf)]
+vf = zeros(3)
+xf = [rf;vf]
+
+# first rollout
+dt = 2/3600
+N = 180
+X = NaN*[@SArray zeros(6) for i = 1:N]
+U = [@SArray zeros(2) for i = 1:N-1]
+
+X[1] = deepcopy(x0)
+end_idx = NaN
+for i = 1:(N-1)
+    U[i] = getmaxL(model,X[i])*[0;.5]
+    X[i+1] = rk4(model,X[i],U[i],dt)
+    if altitude(model,X[i+1])<10
+        @info "under altitude on first rollout"
+        end_idx = i + 1
+        break
+    end
+end
+# error()
+X = X[1:end_idx]
+U = U[1:end_idx]
+Uc = deepcopy(U)
+# @infiltrate
+# error()
+T = 10
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [zeros(2) for i = 1:T-1]
+althist = []
+drhist = []
+crhist = []
+# MPC loop
+for i = 1:T-1
 
-    # MPC loop
-    for i = 1:T-1
+    # rollout current plan and find out when we dying
+    Xr, Ur, t_vec, t_impact = rollout(model,deepcopy(Xsim[i]),Uc[2:end],dt)
+    @assert Xsim[i] == Xr[1]
 
-        # rollout current plan and find out when we dying
-        Xr, Ur, t_vec, t_impact = rollout(deepcopy(Xsim[i]),Uc[2:end],dt)
-        push!(traj_hist,Xr)
-        @show length(Xr)
-        @show length(Ur)
-        @show Xr[end][3]
-        @assert Xsim[i] == Xr[1]
+    alt, dr, cr = postprocess(model::EntryVehicle,Xr,x0)
+    push!(althist,alt)
+    push!(drhist,dr)
+    push!(crhist,cr)
+    # jacobians
+    A,B = getAB(model,Xr,Ur,dt)
 
-        # jacobians
-        # Ur = Ur .*0
-        A,B = getAB(Xr,Ur,dt)
+    # MPC solve
+    Xc, Uc = eg_mpc(model::EntryVehicle,A,B,Xr,Ur,xf)
 
-        # MPC solve
-        @show length(Uc)
-        @show length(Ur)
-        Xc, Uc = eg_mpc(A,B,Xr,Ur)
+    cvxX = mat_from_vec(Xc)
+    cvxU = mat_from_vec(Uc)
 
-        # @infiltrate
-        # testing stuff
-        cvxX = mat_from_vec(Xc)
-        cvxU = mat_from_vec(Uc)
-        # if i == T-1
-        #     @info "end game"
-        #     Xr, Ur, t_vec, t_impact = rollout(Xsim[i],Uc,dt)
-        #     push!(traj_hist,Xr)
-        #     # mat"
-        #     # figure
-        #     # hold on
-        #     # title('Positions')
-        #     # plot($cvxX(1:3,:)')
-        #     # hold off
-        #     # "
-        #     # mat"
-        #     # figure
-        #     # hold on
-        #     # title('Velocities')
-        #     # plot($cvxX(4:6,:)')
-        #     # hold off
-        #     # "
-        #     # mat"
-        #     # figure
-        #     # hold on
-        #     # title('Controls')
-        #     # plot($cvxU')
-        #     # hold off
-        #     # "
-        # end
+    # actual dynamics
+    Usim[i] = copy(Uc[1])
 
-        # actual dynamics
-        Usim[i] = copy(Uc[1])
-
-        Xsim[i+1] = rk4(Xsim[i],Usim[i],dt)
-
-    end
-    xm = mat_from_vec(Xsim)
-    # mat"
-    # figure
-    # hold on
-    # title('Positions')
-    # plot($xm(1:3,:)')
-    # hold off
-    # "
-    # mat"
-    # figure
-    # hold on
-    # title('Positions')
-    # plot($xm(1,:),$xm(2,:))
-    # plot($xm(1,1),$xm(2,1),'r*')
-    # hold off
-    # "
-    um = mat_from_vec(Usim)
-    mat"
-    figure
-    hold on
-    title('Controls')
-    plot($um')
-    hold off
-    "
-    # mat"
-    # figure
-    # hold on
-    # title('Positions')
-    # plot($cvxX(1:3,:)')
-    # hold off
-    # "
-    # mat"
-    # figure
-    # hold on
-    # title('Velocities')
-    # plot($cvxX(4:6,:)')
-    # hold off
-    # "
-    # mat"
-    # figure
-    # hold on
-    # title('Controls')
-    # plot($cvxU')
-    # hold off
-    # "
-    # mat"
-    # figure
-    # hold on
-    # title('Controls')
-    # plot($cvxU(1,:),$cvxU(2,:))
-    # hold off
-    # "
-    @show length(traj_hist)
-    traj = [mat_from_vec(traj_hist[i]) for i = 1:length(traj_hist)]
     # @infiltrate
     # error()
+    Xsim[i+1] = rk4(model::EntryVehicle,Xsim[i],Usim[i],dt)
+
+end
+    # xm = mat_from_vec(Xsim)
+    # # mat"
+    # # figure
+    # # hold on
+    # # title('Positions')
+    # # plot($xm(1:3,:)')
+    # # hold off
+    # # "
+    # # mat"
+    # # figure
+    # # hold on
+    # # title('Positions')
+    # # plot($xm(1,:),$xm(2,:))
+    # # plot($xm(1,1),$xm(2,1),'r*')
+    # # hold off
+    # # "
+    # um = mat_from_vec(Usim)
+    # mat"
+    # figure
+    # hold on
+    # title('Controls')
+    # plot($um')
+    # hold off
+    # "
+    # # mat"
+    # # figure
+    # # hold on
+    # # title('Positions')
+    # # plot($cvxX(1:3,:)')
+    # # hold off
+    # # "
+    # # mat"
+    # # figure
+    # # hold on
+    # # title('Velocities')
+    # # plot($cvxX(4:6,:)')
+    # # hold off
+    # # "
+    # # mat"
+    # # figure
+    # # hold on
+    # # title('Controls')
+    # # plot($cvxU')
+    # # hold off
+    # # "
+    # # mat"
+    # # figure
+    # # hold on
+    # # title('Controls')
+    # # plot($cvxU(1,:),$cvxU(2,:))
+    # # hold off
+    # # "
+    # @show length(traj_hist)
+    # traj = [mat_from_vec(traj_hist[i]) for i = 1:length(traj_hist)]
+    # # @infiltrate
+    # # error()
+    # althist = [mat_from_vec]
+    xf_dr, xf_cr = rangedistances(model,xf,x0)
     mat"
     figure
     hold on
     rgb1 = [29 38 113]/255;
     rgb2 = [195 55 100]/255;
     drgb = rgb2-rgb1
-    for i = 1:length($traj)
-        p = $traj{i};
-        plot3(p(1,:),p(2,:),p(3,:),'Color',rgb1 + drgb*(i-1)/length($traj),'linewidth',3)
-        plot3(p(1,1),p(2,1),p(3,1),'r.','markersize',30)
+    for i = 1:length($drhist)
+        px = $drhist{i}
+        py = $crhist{i}
+        plot(px,py,'Color',rgb1 + drgb*(i-1)/length($drhist),'linewidth',3)
+        plot($xf_dr,$xf_cr,'r.','markersize',20)
     end
-    plot3([0],[0],[0],'g.','markersize',30)
-    zlim([0,1100])
-    %axis equal
-    % grid on
     hold off
     "
 
