@@ -10,7 +10,7 @@ function rollout(model,x0,U_in,dt)
 
         if i > length(U_in)
             U[i] = deepcopy(U_in[end])
-            @warn "went past planned controls"
+            # @info "went past planned controls"
         else
             U[i] = deepcopy(U_in[i])
         end
