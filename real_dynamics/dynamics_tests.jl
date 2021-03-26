@@ -3,7 +3,7 @@ using EntryGuidance
 const EG = EntryGuidance
 using MATLAB
 using Attitude
-
+using StaticArrays
 struct EntryVehicle{T}
     evmodel::EG.CartesianModel{T}
     uscale::Float64
@@ -143,14 +143,14 @@ function getAB(model,X,U,dt)
 end
 
 dt = 2/3600
-N = 440
+N = 133
 X = NaN*[zeros(6) for i = 1:N]
 U = [zeros(2) for i = 1:N-1]
 
 X[1] = deepcopy(x0)
 
 for i = 1:(N-1)
-    U[i] = getmaxL(model,X[i])*[0;.5]
+    U[i] = getmaxL(model,X[i])*[0;.4]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude"
@@ -159,7 +159,7 @@ for i = 1:(N-1)
 
 end
 
-# A,B = getAB(model,X,U,dt)
+@time A,B = getAB(model,X,U,dt)
 # quick post process
 # alt = [altitude(model,X[i]) for i = 1:length(X)]
 xm = mat_from_vec(X)
