@@ -165,6 +165,7 @@ end
     xlabel('Downrange (km)')
     ylabel('Crossrange (km)')
     hold off
+    saveas(gcf,'range.png')
     "
     mat"
     figure
@@ -179,9 +180,10 @@ end
         plot(px(1),alt(1),'r.','markersize',20)
     end
     plot([0,700],ones( 2,1)*10,'r' )
-    xlabel('Knot Point')
+    xlabel('Downrange (km)')
     ylabel('Altitude (km)')
     hold off
+    saveas(gcf,'alt.png')
     "
 end
 first_test()

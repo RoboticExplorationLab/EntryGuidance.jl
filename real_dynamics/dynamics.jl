@@ -40,8 +40,8 @@ function evdynamics(model::EntryVehicle, x, u)
     g = gravitational_acceleration(r, model.evmodel)
 
     #Terms involving Ω (planet rotation) are often thrown out in the literature.
-    # Ω = model.evmodel.planet.Ω #Set Ω = 0.0 here if you want that behavior
-    # Ω̂ = hat([0, 0, Ω])
+    Ω = model.evmodel.planet.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω̂ = hat([0, 0, Ω])
 
     #Aerodynamic acceleration
     e1 = cross(r,v)
@@ -51,7 +51,7 @@ function evdynamics(model::EntryVehicle, x, u)
     D_a = -(D/norm(v))*v #+ L*sin(σ)*e1 + L*cos(σ)*e2
     L_a = e1*u[1] + e2*u[2]
                       # this is rotating planet effects
-    v̇ = D_a + model.uscale*L_a + g #- 2*Ω̂*v - Ω̂*Ω̂*r
+    v̇ = D_a + model.uscale*L_a + g - 2*Ω̂*v - Ω̂*Ω̂*r
 
     # return [v; v̇]
     return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3]]
