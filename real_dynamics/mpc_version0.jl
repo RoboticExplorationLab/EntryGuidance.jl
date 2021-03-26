@@ -156,14 +156,33 @@ end
     rgb2 = [195 55 100]/255;
     drgb = rgb2-rgb1
     for i = 1:length($drhist)
-        px = $drhist{i}
-        py = $crhist{i}
+        px = $drhist{i};
+        py = $crhist{i};
         plot(px,py,'Color',rgb1 + drgb*(i-1)/length($drhist),'linewidth',3)
-        plot($xf_dr,$xf_cr,'r.','markersize',20)
+        plot(px(1),py(1),'r.','markersize',20)
     end
+    plot($xf_dr,$xf_cr,'g.','markersize',20)
+    xlabel('Downrange (km)')
+    ylabel('Crossrange (km)')
     hold off
     "
-
+    mat"
+    figure
+    hold on
+    rgb1 = [29 38 113]/255;
+    rgb2 = [195 55 100]/255;
+    drgb = rgb2-rgb1
+    for i = 1:length($althist)
+        px = $drhist{i};
+        alt = $althist{i};
+        plot(px,alt,'Color',rgb1 + drgb*(i-1)/length($althist),'linewidth',3)
+        plot(px(1),alt(1),'r.','markersize',20)
+    end
+    plot([0,700],ones( 2,1)*10,'r' )
+    xlabel('Knot Point')
+    ylabel('Altitude (km)')
+    hold off
+    "
 end
 first_test()
 
