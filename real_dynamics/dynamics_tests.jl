@@ -4,6 +4,10 @@ const EG = EntryGuidance
 using MATLAB
 using Attitude
 using StaticArrays
+using JuMP, Mosek, MosekTools
+using COSMO
+
+
 struct EntryVehicle{T}
     evmodel::EG.CartesianModel{T}
     uscale::Float64
@@ -85,8 +89,12 @@ end
 function evdynamics(model::EntryVehicle, x, u)
 
     #unpack state
-    r = x[1:3]
-    v = x[4:6]
+    # r = x[1:3]
+    # v = x[4:6]
+    # r = SA[x[1],x[2],x[3]]
+    # v = SA[x[4],x[5],x[6]]
+    r = x[SA[1,2,3]]
+    v = x[SA[4,5,6]]
 
     #atmospheric density
     ρ = atmospheric_density(r, model.evmodel)
@@ -111,15 +119,16 @@ function evdynamics(model::EntryVehicle, x, u)
 
     #Aerodynamic acceleration
     e1 = cross(r,v)
-    e1 .= e1/norm(e1)
+    e1 = e1/norm(e1)
     e2 = cross(v,e1)
-    e2 .= e2/norm(e2)
+    e2 = e2/norm(e2)
     D_a = -(D/norm(v))*v #+ L*sin(σ)*e1 + L*cos(σ)*e2
     L_a = e1*u[1] + e2*u[2]
                       # this is rotating planet effects
     v̇ = D_a + model.uscale*L_a + g #- 2*Ω̂*v - Ω̂*Ω̂*r
 
-    return [v; v̇]
+    # return [v; v̇]
+    return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3]]
 end
 
 function rk4(model,x_n,u,dt)
@@ -133,8 +142,8 @@ function getAB(model,X,U,dt)
     N = length(X)
     n = length(X[1])
     m = length(U[1])
-    A = [zeros(n,n) for i = 1:(N-1)]
-    B = [zeros(n,m) for i = 1:(N-1)]
+    A = [@SArray zeros(n,n) for i = 1:(N-1)]
+    B = [@SArray zeros(n,m) for i = 1:(N-1)]
     for k = 1:(N-1)
         A[k] = ForwardDiff.jacobian(_x -> rk4(model,_x,U[k],dt),X[k])
         B[k] = ForwardDiff.jacobian(_u -> rk4(model,X[k],_u,dt),U[k])
@@ -143,23 +152,26 @@ function getAB(model,X,U,dt)
 end
 
 dt = 2/3600
-N = 133
-X = NaN*[zeros(6) for i = 1:N]
-U = [zeros(2) for i = 1:N-1]
+N = 160
+X = NaN*[@SArray zeros(6) for i = 1:N]
+U = [@SArray zeros(2) for i = 1:N-1]
 
 X[1] = deepcopy(x0)
-
+# global end_idx = NaN
 for i = 1:(N-1)
-    U[i] = getmaxL(model,X[i])*[0;.4]
+    U[i] = getmaxL(model,X[i])*[0;.5]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude"
+        # end_idx = i +1
+        # X = X[1:(i+1)];U = U[1:(i+1)];
         break
     end
-
 end
 
-@time A,B = getAB(model,X,U,dt)
+# trim
+# X = X[1:end_idx];U = U[1:end_idx];
+# A,B = getAB(model,X,U,dt)
 # quick post process
 # alt = [altitude(model,X[i]) for i = 1:length(X)]
 xm = mat_from_vec(X)
@@ -192,13 +204,122 @@ ylabel('Crossrange')
 legend('Trajectory','Goal')
 hold off
 "
+#
+# um = mat_from_vec(U)
+#
+# mat"
+# figure
+# hold on
+# plot($um')
+# set(gca, 'YScale', 'log')
+# hold off
+# "
 
+U1 = deepcopy(U)
+A,B = getAB(model,X,U,dt)
+@assert (length(A) == length(B))
+@assert (length(X) == length(U)+1)
+@assert (length(A) == length(U))
+N = length(X)
+x0 = copy(X[1])
+
+# jmodel = Model(Mosek.Optimizer)
+# set_optimizer_attribute(jmodel, "MSK_DPAR_INTPNT_CO_TOL_DFEAS",1e-15)
+# set_optimizer_attribute(jmodel, "MSK_DPAR_INTPNT_CO_TOL_REL_GAP",1e-15)
+
+jmodel = Model(COSMO.Optimizer)
+# set_optimizer_attribute(jmodel, "eps_abs",1e-8)
+
+
+@variable(jmodel, δx[1:6,1:N])
+@variable(jmodel, δu[1:2,1:N-1])
+
+@constraint(jmodel,δx[:,1] .== zeros(6))
+for i = 1:N-1
+    @constraint(jmodel, δx[:,i+1] .== A[i]*δx[:,i] + B[i]*δu[:,i])
+end
+
+# get maximum lift
+maxL = zeros(N-1)
+for i = 1:N-1
+    maxL[i] = getmaxL(model,X[i])
+end
+
+for i = 1:N-1
+    @constraint(jmodel, [maxL[i],δu[1,i],δu[2,i]] in SecondOrderCone())
+end
+
+rr = normalize(xf[1:3])
+Qn = I - rr*rr'
+Q = Qn'*Qn
+Q = I(3)
+objective_exp = @expression(jmodel, (X[N][1:3] + δx[1:3,N] - xf[1:3] )' * Q * (X[N][1:3] + δx[1:3,N] - xf[1:3] ))
+
+α = 1e-2
+for i = 1:N-1
+    add_to_expression!(objective_exp, α*δu[:,i]'*δu[:,i])
+end
+
+@objective(jmodel, Min, objective_exp)
+
+optimize!(jmodel)
+
+du = value.(δu)
+dx = value.(δx)
+mat"
+figure
+hold on
+plot($du')
+hold off
+"
+
+U = vec_from_mat(mat_from_vec(U) + du)
+
+dt = 2/3600
+N = 160
+X = NaN*[@SArray zeros(6) for i = 1:N]
+# U = [@SArray zeros(2) for i = 1:N-1]
+
+X[1] = deepcopy(x0)
+# global end_idx = NaN
+for i = 1:(N-1)
+    # U[i] = getmaxL(model,X[i])*[0;.5]
+    X[i+1] = rk4(model,X[i],U[i],dt)
+    if altitude(model,X[i+1])<10
+        @info "under altitude"
+        # end_idx = i +1
+        # X = X[1:(i+1)];U = U[1:(i+1)];
+        break
+    end
+end
+
+# xf_dr, xf_cr = rangedistances(model,xf,x0)
+alt, dr, cr = postprocess(model::EntryVehicle,X,x0)
+mat"
+figure
+hold on
+plot($dr,$cr)
+plot($xf_dr,$xf_cr,'r.','markersize',20)
+xlabel('Downrange')
+ylabel('Crossrange')
+legend('Trajectory','Goal','location','northwest')
+hold off
+"
+
+u1m = mat_from_vec(U1)
 um = mat_from_vec(U)
+mat"
+figure
+hold on
+plot($u1m','b')
+plot($um','r')
+hold off
+"
 
 mat"
 figure
 hold on
-plot($um')
-set(gca, 'YScale', 'log')
+plot($alt)
+plot(1:length($alt),ones( length($alt),1)*10,'r' )
 hold off
 "
