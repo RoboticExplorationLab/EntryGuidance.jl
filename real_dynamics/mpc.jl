@@ -39,9 +39,14 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
 
 
     α = 1e-1
+    β = 1e1
     rr = normalize(xf[1:3])
     Qn = I - rr*rr'
-    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + α*sumsquares(vec(δu)), cons)
+    l1val = 0
+    for i = 1:(N-2)
+        l1val += norm( ((U[i+1] + δu[:,i+1])/L_max[i+1]) - ((U[i] + δu[:,i])/L_max[i]) )
+    end
+    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)), cons)
     Convex.solve!(problem, () -> Mosek.Optimizer())
 
     cX = vec_from_mat(mat_from_vec(X) + evaluate(δx))

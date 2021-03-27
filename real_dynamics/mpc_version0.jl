@@ -154,7 +154,7 @@ end
     hold on
     rgb1 = [29 38 113]/255;
     rgb2 = [195 55 100]/255;
-    drgb = rgb2-rgb1
+    drgb = rgb2-rgb1;
     for i = 1:length($drhist)
         px = $drhist{i};
         py = $crhist{i};
@@ -172,7 +172,7 @@ end
     hold on
     rgb1 = [29 38 113]/255;
     rgb2 = [195 55 100]/255;
-    drgb = rgb2-rgb1
+    drgb = rgb2-rgb1;
     for i = 1:length($althist)
         px = $drhist{i};
         alt = $althist{i};
@@ -185,6 +185,22 @@ end
     ylabel('Altitude (km)')
     hold off
     saveas(gcf,'alt.png')
+    "
+
+    AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
+    mat"
+    figure
+    hold on
+    title('Angle of Attack')
+    plot(rad2deg($AoA))
+    hold off
+    "
+    mat"
+    figure
+    hold on
+    title('Bank Angle')
+    plot(rad2deg($bank))
+    hold off
     "
 end
 first_test()

@@ -9,6 +9,17 @@ function postprocess(model::EntryVehicle,X,x0)
     end
     return alt, dr, cr
 end
+function processU(model::EntryVehicle,X,U)
+    N = length(X)
+    AoA = zeros(N-1)
+    bank = zeros(N-1)
+    for i = 1:N-1
+        AoA[i] = (norm(U[i])/getmaxL(model,X[i])) * deg2rad(20)
+        bank[i] = atan(U[i][1],U[i][2])
+    end
+    return AoA, bank
+end
+
 function altitude(model,x)
     return norm(x[1:3]) - model.evmodel.planet.R
 end
