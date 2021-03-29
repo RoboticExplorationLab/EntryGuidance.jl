@@ -136,7 +136,7 @@ end
 # x0 = [-pi/2; 0; 0; 0]
 
 
-function runme()
+function runme(ddp)
     p = [zeros(Nx) for i = 1:Nt]
 # P = zeros(Nx,Nx,Nt)
 P = [zeros(Nx,Nx) for i = 1:Nt]
@@ -158,33 +158,22 @@ for k = 1:(Nt-1)
 end
 J = cost(xtraj,utraj)
 
-# gx = zeros(Nx)
-# gu = zeros(Nu)
-# Gxx = zeros(Nx,Nx)
-# Guu = zeros(Nu,Nu)
-# Gxu = zeros(Nx)
-# Gux = zeros(Nx)
+gx = zeros(Nx)
+gu = zeros(Nu)
+Gxx = zeros(Nx,Nx)
+Guu = zeros(Nu,Nu)
+Gxu = zeros(Nx,Nu)
+Gux = zeros(Nu,Nx)
 
 iter = 0
 for i = 1:100
     iter += 1
-
-#     p = zeros(Nx,Nt)
-#     P = zeros(Nx,Nx,Nt)
-#     d = ones(Nt-1)
-#     K = zeros(Nu,Nx,Nt-1)
     ΔJ = 0.0
 
-#     @show Qn*(xtraj[Nt]-xgoal)
-#     @show Nt
-#     @show size(p)
-#     @show size(p[Nt])
-#     @show size(Qn*(xtraj[Nt]-xgoal))
+
     p[Nt] = Qn*(xtraj[Nt]-xgoal)
-#     @show "yea"
     P[Nt] = Qn
 
-#     @show "yeah"
     #Backward Pass
     for k = (Nt-1):-1:1
         #Calculate derivatives
@@ -194,49 +183,39 @@ for i = 1:100
         A = ForwardDiff.jacobian(dx->dynamics_rk4(dx,utraj[k]),xtraj[k])
         B = ForwardDiff.jacobian(du->dynamics_rk4(xtraj[k],du),utraj[k])
 
-        # second order derivatives
-        dAdx = ForwardDiff.jacobian(_x -> Avec(_x,utraj[k]),xtraj[k])
-        # @show size(dAdx)
-        # dAdu = ForwardDiff.jacobian(_u -> Avec(xtraj[k],_u),utraj[k])
-        # @show size(dAdu)
-        dBdx = ForwardDiff.jacobian(_x -> Bvec(_x,utraj[k]),xtraj[k])
-        # @show size(dBdx)
-        dBdu = ForwardDiff.jacobian(_u -> Bvec(xtraj[k],_u),utraj[k])
-        # @show size(dBdu)
-
-        # davec = kron(p[k+1]',I)
         gx = q + A'*p[k+1]
         gu = r + B'*p[k+1]
 
-        fxx = reshape(dAdx,6,6,6)
-        fuu = reshape(dBdu,6,3,3)
-        fux = reshape(dBdx,6,3,6)
-        # @infiltrate()
-        # error()
-        Gxx = Q + A'*P[k+1]*A #+ p[k+1]' ⊡ fxx
-        Guu = R + B'*P[k+1]*B #+ p[k+1]' ⊡ fuu
-        Gux = B'*P[k+1]*A #+ p[k+1]' ⊡ fux
-        # Gxu = A'*P[k+1]*B + p[k+1]' ⊡ fux
-        Gxu = copy(transpose(Gux))
-        # Gux = B'*P[k+1]*A + kron(p[k+1]',I(Nu))*Tmat(Nu)*dBdx
-        # Gxx = Q + A'*P[k+1]*A + kron(p[k+1]',I(Nx))*Tmat(Nx)*dAdx
-        # Guu = R + B'*P[k+1]*B + kron(p[k+1]',I(Nu))*Tmat(Nu)*dBdu
-        # Gxu = A'*P[k+1]*B + kron(p[k+1]',I(Nx))*Tmat(Nx)*dAdu
-        # Gux = B'*P[k+1]*A + kron(p[k+1]',I(Nu))*Tmat(Nu)*dBdx
+        if ddp
+            dAdx = ForwardDiff.jacobian(_x -> Avec(_x,utraj[k]),xtraj[k])
+            dBdx = ForwardDiff.jacobian(_x -> Bvec(_x,utraj[k]),xtraj[k])
+            dBdu = ForwardDiff.jacobian(_u -> Bvec(xtraj[k],_u),utraj[k])
 
-        # @infiltrate
-        # error()
+            fxx = reshape(dAdx,6,6,6)
+            fuu = reshape(dBdu,6,3,3)
+            fux = reshape(dBdx,6,3,6)
+
+            Gxx .= Q + A'*P[k+1]*A + p[k+1]' ⊡ fxx
+            Guu .= R + B'*P[k+1]*B + p[k+1]' ⊡ fuu
+            Gux .= B'*P[k+1]*A + p[k+1]' ⊡ fux
+            Gxu .= copy(transpose(Gux))
+        else
+            Gxx .= Q + A'*P[k+1]*A #+ p[k+1]' ⊡ fxx
+            Guu .= R + B'*P[k+1]*B #+ p[k+1]' ⊡ fuu
+            Gux .= B'*P[k+1]*A #+ p[k+1]' ⊡ fux
+            Gxu .= copy(transpose(Gux))
+        end
+
         ρ = 1e-5
-        Guu += ρ*I
-        d[k] = (Guu)\gu
-        K[k] = (Guu)\Gux
+        d[k] = (Guu+ρ*I)\gu
+        K[k] = (Guu+ρ*I)\Gux
 
         p[k] = gx - K[k]'*gu + K[k]'*Guu*d[k] - Gxu*d[k]
         P[k] = Gxx + K[k]'*Guu*K[k] - Gxu*K[k] - K[k]'*Gux
 
         ΔJ += gu'*d[k]
     end
-#     display(j)
+
 
     #Forward rollout with line search
     xn = copy(xtraj)
@@ -264,39 +243,13 @@ for i = 1:100
         end
 
     end
-
-    # for k = 1:(Nt-1)
-    #     un[k] = utraj[k] - α*d[k] - K[k]*(xn[k]-xtraj[k])
-    #     xn[k+1] = dynamics_rk4(xn[k],un[k])
-    # end
-    # Jn = cost(xn,un)
-
-    # α = 1.0
-    # for kk = 1:10
-    #     α = 0.5*α
-    #     for k = 1:(Nt-1)
-    #         un[k] = utraj[k] - α*d[k] - K[k]*(xn[k]-xtraj[k])
-    #         xn[k+1] = dynamics_rk4(xn[k],un[k])
-    #     end
-    #     Jn = cost(xn,un)
-    #     if Jn < (J - 1e-2*α*ΔJ)
-    #         @info "α = $α"
-    #         break
-    #     end
-    #     if kk == 10
-    #         @error("line search failed")
-    #     end
-    # end
-    # if α != 1
-    #     @show α
-    # end
     @show iter
     dJ = abs(J - Jn)
     J = copy(Jn)
     @show dJ
     xtraj .= xn
     utraj .= un
-    if dJ<1e-5
+    if dJ<1e-8
         break
     end
 end
@@ -310,4 +263,4 @@ hold off
 "
 end
 
-runme()
+runme(true)
