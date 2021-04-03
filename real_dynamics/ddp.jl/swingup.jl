@@ -79,8 +79,6 @@ function Tmat(n)
     return T
 end
 function Avec(x,u)
-    # A = ForwardDiff.jacobian(dx->dynamics_rk4(dx,utraj[k]),xtraj[k])
-    # B = ForwardDiff.jacobian(du->dynamics_rk4(xtraj[k],du),utraj[k])
     return vec(ForwardDiff.jacobian(dx->dynamics_rk4(dx,u),x))
 end
 function Bvec(x,u)
@@ -197,7 +195,7 @@ for i = 1:100
 
             Gxx .= Q + A'*P[k+1]*A + p[k+1]' ⊡ fxx
             Guu .= R + B'*P[k+1]*B + p[k+1]' ⊡ fuu
-            Gux .= B'*P[k+1]*A + p[k+1]' ⊡ fux
+            Gux .= B'*P[k+1]*A     + p[k+1]' ⊡ fux
             Gxu .= copy(transpose(Gux))
         else
             Gxx .= Q + A'*P[k+1]*A #+ p[k+1]' ⊡ fxx
@@ -263,4 +261,4 @@ hold off
 "
 end
 
-runme(true)
+runme(false)

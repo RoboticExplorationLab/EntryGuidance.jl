@@ -43,10 +43,16 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
     rr = normalize(xf[1:3])
     Qn = I - rr*rr'
     l1val = 0
-    for i = 1:(N-2)
-        l1val += norm( ((U[i+1] + δu[:,i+1])/L_max[i+1]) - ((U[i] + δu[:,i])/L_max[i]) )
-    end
-    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)), cons)
+    # for i = 1:(N-2)
+    #     l1val += norm( ((U[i+1] + δu[:,i+1])/L_max[i+1]) - ((U[i] + δu[:,i])/L_max[i]) )
+    # end
+    γ = 1e1
+    # problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)) + γ*norm(X[N][4:6]), cons)
+
+    # trust region stuff
+    push!(cons, norm(δx[:,N])<=200.0)
+    # problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)) + γ*norm(X[N][4:6]), cons)
+    problem = minimize( norm( ( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + γ*norm( vec(   mat_from_vec(U) + δu       )), cons)
     Convex.solve!(problem, () -> Mosek.Optimizer())
 
     cX = vec_from_mat(mat_from_vec(X) + evaluate(δx))
