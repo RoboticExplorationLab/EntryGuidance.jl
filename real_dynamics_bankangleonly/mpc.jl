@@ -45,7 +45,7 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
 
     # cost function
     γ = 1e-6
-    problem = minimize( norm( ( Qn*(X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + γ*norm( U + δu ), cons)
+    problem = minimize( norm( ( Qn*(X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + γ*norm( U + δu ,1), cons)
     Convex.solve!(problem, () -> Mosek.Optimizer())
 
     cX = vec_from_mat(mat_from_vec(X) + evaluate(δx))

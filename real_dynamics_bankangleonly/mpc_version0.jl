@@ -59,7 +59,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 30
+T = 80
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [0.0 for i = 1:T-1]
@@ -126,8 +126,11 @@ end
     figure
     hold on
     title('Bank Angle')
-    plot($bank)
+    plot(0:2:(2*(length($bank)-1)), $bank)
+    ylabel('Bank Angle (degrees)')
+    xlabel('Time (seconds)')
     hold off
+    saveas(gcf,'bank.png')
     "
     # # mat"
     # # figure
