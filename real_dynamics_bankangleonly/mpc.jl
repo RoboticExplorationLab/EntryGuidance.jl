@@ -51,13 +51,13 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
     cX = vec_from_mat(mat_from_vec(X) + evaluate(δx))
     cU = U + evaluate(δu)
 
-    bank = [cX[i][7] for i = 1:length(cX)]
-    mat"
-    figure
-    hold on
-    plot($bank)
-    hold off
-    "
+    # bank = [cX[i][7] for i = 1:length(cX)]
+    # mat"
+    # figure
+    # hold on
+    # plot($bank)
+    # hold off
+    # "
     # @infiltrate
     # error()
     return cX, cU

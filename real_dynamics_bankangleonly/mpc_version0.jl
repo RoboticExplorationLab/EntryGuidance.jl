@@ -59,7 +59,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 10
+T = 30
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [0.0 for i = 1:T-1]
@@ -111,12 +111,22 @@ end
     # # hold off
     # # "
     # um = mat_from_vec(Usim)
-    um = copy(Usim)
+    # um = copy(Usim)
+    # mat"
+    # figure
+    # hold on
+    # title('Controls')
+    # plot($um')
+    # hold off
+    # "
+    xm = copy(mat_from_vec(Xsim))
+    # @infiltrate
+    bank = rad2deg.(xm[7,:])
     mat"
     figure
     hold on
-    title('Controls')
-    plot($um')
+    title('Bank Angle')
+    plot($bank)
     hold off
     "
     # # mat"
