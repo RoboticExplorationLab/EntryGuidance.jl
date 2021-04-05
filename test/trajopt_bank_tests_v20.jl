@@ -28,7 +28,7 @@ abstract type EntryVehicleRK <: RD.Explicit end
 function RD.discrete_dynamics(::Type{EntryVehicleRK}, model::EntryVehicle,
         x::StaticVector, u::StaticVector, t, dt)
 
-    h = u[3]/3600.0 #u is in seconds, dynamics are in hours
+    h = u[2]/3600.0 #u is in seconds, dynamics are in hours
 
     k1 = RD.dynamics(model, x,             u)*h;
     k2 = RD.dynamics(model, x + k1/2,      u)*h;
@@ -37,7 +37,7 @@ function RD.discrete_dynamics(::Type{EntryVehicleRK}, model::EntryVehicle,
     return x + (k1 + 4*k2 + k3)/6
 end
 
-Base.size(::EntryVehicle) = 7,3
+Base.size(::EntryVehicle) = 7,2
 
 model = EntryVehicle(CartesianMSLModel())
 n,m = size(model)
@@ -63,10 +63,11 @@ xf = SVector{n}([rf; vf; σ])
 
 #Cost function
 Q = Diagonal(SVector{n}(zeros(n)))
-R = Diagonal(SVector{m}([0.0001, 0.0001, 1]))
+R = Diagonal(SVector{m}([0.0001, 1]))
 H = zeros(m,n)
 q = -Q*xf
-r = SA[0, 500.0, -R[3,3]*dt0]
+# r = SA[0, 500.0, -R[3,3]*dt0]
+r = SA[0,0]
 c = 0.0
 stage_cost = DiagonalCost(Q,R,H,q,r,c,terminal=false)
 
@@ -79,19 +80,19 @@ obj = Objective(stage_cost,terminal_cost,N)
 cons = TO.ConstraintList(n,m,N)
 ∞ = Inf64
 add_constraint!(cons, BoundConstraint(n,m,x_min=SA[-∞,-∞,-∞,-∞,-∞,-∞,-pi],x_max=SA[∞,∞,∞,∞,∞,∞,pi]),1:N)
-add_constraint!(cons, BoundConstraint(n,m,u_min=[-∞,-∞,0.5],u_max=[∞,∞,3.0]),1:(N-1))
+add_constraint!(cons, BoundConstraint(n,m,u_min=[-∞,0.5],u_max=[∞,3.0]),1:(N-1))
 add_constraint!(cons, GoalConstraint(xf, [1,2,3]), N:N)
 
-# linear inequality constraint
-A_ineq = @SMatrix [ 1 -1 0; -1 -1.0 0]
-b_ineq = SA[0,0.0]
-# LinearConstraint(n,m,A,b,Inequality(),:control)
-add_constraint!(cons,LinearConstraint(n,m,A_ineq,b_ineq,Inequality(),8:10),1:(N-1))
+# # linear inequality constraint
+# A_ineq = @SMatrix [ 1 -1 0; -1 -1.0 0]
+# b_ineq = SA[0,0.0]
+# # LinearConstraint(n,m,A,b,Inequality(),:control)
+# add_constraint!(cons,LinearConstraint(n,m,A_ineq,b_ineq,Inequality(),8:10),1:(N-1))
 
 #Initial Controls
 # u_traj = randn(m,N-1)
 u_traj = zeros(m,N-1)
-u_traj[3,:] .= dt0*ones(N-1)
+u_traj[2,:] .= dt0*ones(N-1)
 
 prob = TO.Problem(model, obj, xf, tf, x0=x0, U0=u_traj, constraints=cons, integration=EntryVehicleRK)
 
@@ -143,7 +144,7 @@ cross_range = zeros(N)
 for k = 1:(N-1)
     u_traj[:,k] .= U[k]
     σ̇[k] = u_traj[1,k]
-    dt[k] = u_traj[3,k]
+    dt[k] = u_traj[2,k]
     t_traj[k+1] = t_traj[k] + dt[k]
     down_range[k+1] = down_range[k] + norm(x_traj[1:3,k+1] - x_traj[1:3,k])
     cross_range[k+1] = cross_range[k] + (cross(r0,v0)/norm(cross(r0,v0)))'*(x_traj[1:3,k+1] - x_traj[1:3,k])
