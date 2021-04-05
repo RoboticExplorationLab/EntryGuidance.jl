@@ -1,8 +1,8 @@
 
 function rollout(model,x0,U_in,dt)
     N = 1000
-    X = [@SVector zeros(6) for i = 1:N]
-    U = [@SVector zeros(2) for i = 1:N-1]
+    X = [@SVector zeros(7) for i = 1:N]
+    U = [0.0 for i = 1:N-1]
     X[1] = copy(x0)
     end_idx = NaN
     t_vec = 0:dt:((N-1)*dt)

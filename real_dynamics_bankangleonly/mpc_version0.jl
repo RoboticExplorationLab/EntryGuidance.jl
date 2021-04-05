@@ -21,7 +21,7 @@ include(joinpath(@__DIR__,"post_process.jl"))
 function first_test()
 
 # evmodel = CartesianMSLModel()
-model = EntryVehicle(CartesianMSLModel(),1e4)
+model = EntryVehicle(CartesianMSLModel())
 #Initial conditions for MSL
 Rm = model.evmodel.planet.R
 r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
@@ -29,24 +29,24 @@ V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 γ0 = -15.474*(pi/180.0) #Flight path angle at interface
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
 # x0 = [r0;v0]
-x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0]
+σ = deg2rad(5)
+x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0,σ]
 
 #Final conditions for MSL 631.979 km down range and 7.869 km cross-range from entry point
 Rf = Rm+10.0 #Parachute opens at 10 km altitude
 rf = Rf*[cos(7.869/Rf)*cos(631.979/Rf); cos(7.869/Rf)*sin(631.979/Rf); sin(7.869/Rf)]
 vf = zeros(3)
-xf = [rf;vf]
+xf = [rf;vf;0]
 
 # first rollout
 dt = 2/3600
 N = 180
-X = NaN*[@SArray zeros(6) for i = 1:N]
-U = [@SArray zeros(2) for i = 1:N-1]
+X = NaN*[@SArray zeros(7) for i = 1:N]
+U = [0 for i = 1:N-1]
 
 X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
-    U[i] = getmaxL(model,X[i])*[0;.41]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
@@ -54,18 +54,15 @@ for i = 1:(N-1)
         break
     end
 end
-# @infiltrate
-# error()
-# error()
 X = X[1:end_idx]
 U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 90
+T = 10
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
-Usim = [zeros(2) for i = 1:T-1]
+Usim = [0.0 for i = 1:T-1]
 althist = [zeros(2) for i = 1:T-1]
 drhist = [zeros(2) for i = 1:T-1]
 crhist = [zeros(2) for i = 1:T-1]
@@ -87,7 +84,7 @@ for i = 1:T-1
     Xc, Uc = eg_mpc(model::EntryVehicle,A,B,Xr,Ur,xf)
 
     cvxX = mat_from_vec(Xc)
-    cvxU = mat_from_vec(Uc)
+    cvxU = deepcopy(Uc)
 
     # actual dynamics
     Usim[i] = copy(Uc[1])
@@ -113,7 +110,8 @@ end
     # # plot($xm(1,1),$xm(2,1),'r*')
     # # hold off
     # # "
-    um = mat_from_vec(Usim)
+    # um = mat_from_vec(Usim)
+    um = copy(Usim)
     mat"
     figure
     hold on
@@ -193,21 +191,21 @@ end
     saveas(gcf,'alt.png')
     "
 
-    AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
-    mat"
-    figure
-    hold on
-    title('Angle of Attack')
-    plot(rad2deg($AoA))
-    hold off
-    "
-    mat"
-    figure
-    hold on
-    title('Bank Angle')
-    plot(rad2deg($bank))
-    hold off
-    "
+    # AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
+    # mat"
+    # figure
+    # hold on
+    # title('Angle of Attack')
+    # plot(rad2deg($AoA))
+    # hold off
+    # "
+    # mat"
+    # figure
+    # hold on
+    # title('Bank Angle')
+    # plot(rad2deg($bank))
+    # hold off
+    # "
 end
 first_test()
 
