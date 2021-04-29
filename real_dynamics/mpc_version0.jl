@@ -28,8 +28,8 @@ r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
 V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 γ0 = -15.474*(pi/180.0) #Flight path angle at interface
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
-# x0 = [r0;v0]
-x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0]
+x0 = [r0;v0]
+# x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0]
 
 #Final conditions for MSL 631.979 km down range and 7.869 km cross-range from entry point
 Rf = Rm+10.0 #Parachute opens at 10 km altitude
@@ -62,7 +62,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 90
+T = 50
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [zeros(2) for i = 1:T-1]
@@ -208,8 +208,10 @@ end
     plot(rad2deg($bank))
     hold off
     "
+
+    return Xsim
 end
-first_test()
+Xsim2 = first_test()
 
 
 

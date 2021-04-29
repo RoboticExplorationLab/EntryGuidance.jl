@@ -66,6 +66,7 @@ Usim = [0.0 for i = 1:T-1]
 althist = [zeros(2) for i = 1:T-1]
 drhist = [zeros(2) for i = 1:T-1]
 crhist = [zeros(2) for i = 1:T-1]
+# HRhist = zeros(T-1)
 # MPC loop
 for i = 1:T-1
 
@@ -74,6 +75,7 @@ for i = 1:T-1
     @assert Xsim[i] == Xr[1]
 
     althist[i], drhist[i], crhist[i] = postprocess(model::EntryVehicle,Xr,x0)
+    # HRhist[i] = get_heating(model::EntryVehicle, Xsim[i])
     # push!(althist,alt)
     # push!(drhist,dr)
     # push!(crhist,cr)
@@ -204,6 +206,12 @@ end
     saveas(gcf,'alt.png')
     "
 
+    # mat"
+    # figure
+    # plot($HRhist)
+    # hold on
+    # "
+
     # AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
     # mat"
     # figure
@@ -219,8 +227,10 @@ end
     # plot(rad2deg($bank))
     # hold off
     # "
+    return Xsim
 end
-first_test()
+
+Xsim2 = first_test()
 
 
 

@@ -50,9 +50,23 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
     # problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)) + γ*norm(X[N][4:6]), cons)
 
     # trust region stuff
-    push!(cons, norm(δx[:,N])<=200.0)
-    # problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)) + γ*norm(X[N][4:6]), cons)
-    problem = minimize( norm( ( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + γ*norm( vec(   mat_from_vec(U) + δu       )), cons)
+    # push!(cons, norm(δx[:,N])<=200.0)
+
+    # g loading constraint
+    # for i = 1:N-1
+    #     v1 = (X[i][4:6] + δx[4:6,i])*1000/3600
+    #     v2 = (X[i+1][4:6] + δx[4:6,i+1])*1000/3600
+    #     push!(cons,norm(v2 - v1)/(2*9.8) <= 13.0)
+    # end # dt = 2.0 s
+
+    # dynamic pressure constraint
+    for i = 1:N
+        gk = pressure_constraint(model,X[i])
+        ∇gk = pressure_gradient(model,X[i])
+        push!(cons, dot(∇gk,δx[:,i]) <= -gk)
+    end
+    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)) , cons)
+    # problem = minimize( norm( ( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + γ*norm( vec(   mat_from_vec(U) + δu       )), cons)
     Convex.solve!(problem, () -> Mosek.Optimizer())
 
     cX = vec_from_mat(mat_from_vec(X) + evaluate(δx))
