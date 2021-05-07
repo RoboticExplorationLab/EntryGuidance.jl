@@ -89,7 +89,25 @@ function get_heating(model::EntryVehicle, x)
     return HR, PR, ρ
 end
 
-M = EntryVehicle(CartesianMSLModel(),1e4)
+
+struct EntryVehicle{T} <: TO.AbstractModel
+    evmodel::EG.CartesianModel{T}
+end
+
+function evdynamics(model::EntryVehicle, x, u)
+    α = u[1]
+    σ = u[2]
+    return [EG.dynamics(x[1:6], EG.angles_input([α, σ],x[1:6],model.evmodel), model.evmodel)]
+end
+function rk4(model,x_n,u,dt)
+    k1 = dt*evdynamics(model,x_n,u)
+    k2 = dt*evdynamics(model,x_n+k1/2,u)
+    k3 = dt*evdynamics(model,x_n+k2/2,u)
+    k4 = dt*evdynamics(model,x_n+k3,u)
+    return (x_n + (1/6)*(k1 + 2*k2 + 2*k3 + k4))
+end
+model = EntryVehicle(CartesianMSLModel())
+dt = 2/3600.0
 alt_hist = zeros(length(Xsim2))
 ρ_hist = zeros(length(Xsim2))
 ρ_hist2 = zeros(length(Xsim2))

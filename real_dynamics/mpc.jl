@@ -38,7 +38,7 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
     end
 
 
-    α = 1e-1
+    α = 1e-2
     β = 0e1
     rr = normalize(xf[1:3])
     Qn = I - rr*rr'
@@ -60,12 +60,12 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
     # end # dt = 2.0 s
 
     # dynamic pressure constraint
-    for i = 1:N
-        gk = pressure_constraint(model,X[i])
-        ∇gk = pressure_gradient(model,X[i])
-        push!(cons, dot(∇gk,δx[:,i]) <= -gk)
-    end
-    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + β*l1val +  α*sumsquares(vec(δu)) , cons)
+    # for i = 1:N
+    #     gk = pressure_constraint(model,X[i])
+    #     ∇gk = pressure_gradient(model,X[i])
+    #     push!(cons, dot(∇gk,δx[:,i]) <= -gk)
+    # end
+    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) +  α*sumsquares(vec(δu)) , cons)
     # problem = minimize( norm( ( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) + γ*norm( vec(   mat_from_vec(U) + δu       )), cons)
     Convex.solve!(problem, () -> Mosek.Optimizer())
 

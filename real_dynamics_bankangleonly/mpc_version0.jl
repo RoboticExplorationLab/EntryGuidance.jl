@@ -28,8 +28,9 @@ r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
 V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 γ0 = -15.474*(pi/180.0) #Flight path angle at interface
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
-# x0 = [r0;v0]
-σ = deg2rad(5)
+σ = deg2rad(0)
+# x0 = [r0;v0;σ]
+
 x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0,σ]
 
 #Final conditions for MSL 631.979 km down range and 7.869 km cross-range from entry point
@@ -59,7 +60,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 80
+T = 8
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [0.0 for i = 1:T-1]
@@ -127,12 +128,14 @@ end
     mat"
     figure
     hold on
-    title('Bank Angle')
-    plot(0:2:(2*(length($bank)-1)), $bank)
-    ylabel('Bank Angle (degrees)')
-    xlabel('Time (seconds)')
+    %title('Bank Angle')
+    plot(0:2:(2*(length($bank)-1)), $bank,'linewidth',4)
+    ylabel('bank angle (degrees)')
+    xlabel('time (seconds)')
     hold off
-    saveas(gcf,'bank.png')
+    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    %matlab2tikz('bank_angle.tex')
+    %saveas(gcf,'bank.png')
     "
     # # mat"
     # # figure
@@ -172,38 +175,49 @@ end
     figure
     hold on
     rgb1 = [29 38 113]/255;
-    rgb2 = [195 55 100]/255;
+    rgb2 = 1.3*[195 55 100]/255;
     drgb = rgb2-rgb1;
     for i = 1:length($drhist)
         px = $drhist{i};
         py = $crhist{i};
-        plot(px,py,'Color',rgb1 + drgb*(i-1)/length($drhist),'linewidth',3)
-        plot(px(1),py(1),'r.','markersize',20)
+        if i < 8
+            plot(px,py,'Color',rgb1 + drgb*(i-1)/7,'linewidth',3)
+        end
+        %plot(px(1),py(1),'r.','markersize',20)
     end
     plot($xf_dr,$xf_cr,'g.','markersize',20)
-    xlabel('Downrange (km)')
-    ylabel('Crossrange (km)')
+    xlabel('downrange (km)')
+    ylabel('crossrange (km)')
     hold off
-    saveas(gcf,'range.png')
+    %saveas(gcf,'range.png')
+    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    matlab2tikz('bank_track.tex')
+    close all
     "
     mat"
     figure
     hold on
     rgb1 = [29 38 113]/255;
-    rgb2 = [195 55 100]/255;
+    rgb2 = 1.3*[195 55 100]/255;
     drgb = rgb2-rgb1;
     for i = 1:length($althist)
         px = $drhist{i};
         alt = $althist{i};
-        plot(px,alt,'Color',rgb1 + drgb*(i-1)/length($althist),'linewidth',3)
-        plot(px(1),alt(1),'r.','markersize',20)
+        if i < 6
+            colo = drgb*(i-1)/5
+            plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
+        end
+        %plot(px(1),alt(1),'r.','markersize',20)
     end
     plot([0,800],ones( 2,1)*10,'r' )
     plot($xf_dr,10,'g.','markersize',20)
-    xlabel('Downrange (km)')
-    ylabel('Altitude (km)')
+    xlim([100 450])
+    xlabel('downrange (km)')
+    ylabel('altitude (km)')
     hold off
-    saveas(gcf,'alt.png')
+    %saveas(gcf,'alt.png')
+    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    matlab2tikz('bank_alt.tex')
     "
 
     # mat"
