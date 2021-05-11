@@ -38,7 +38,7 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
     end
 
 
-    α = 1e-2
+    α = 1e-1
     β = 0e1
     rr = normalize(xf[1:3])
     Qn = I - rr*rr'

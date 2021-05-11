@@ -46,7 +46,7 @@ U = [@SArray zeros(2) for i = 1:N-1]
 X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
-    U[i] = getmaxL(model,X[i])*[0;.51]
+    U[i] = getmaxL(model,X[i])*[0;.5]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
@@ -62,7 +62,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 50
+T = 6
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [zeros(2) for i = 1:T-1]
@@ -155,59 +155,112 @@ end
     # # error()
     # althist = [mat_from_vec]
     xf_dr, xf_cr = rangedistances(model,xf,x0)
+    # mat"
+    # figure
+    # hold on
+    # rgb1 = [29 38 113]/255;
+    # rgb2 = [195 55 100]/255;
+    # drgb = rgb2-rgb1;
+    # for i = 1:length($drhist)
+    #     px = $drhist{i};
+    #     py = $crhist{i};
+    #     plot(px,py,'Color',rgb1 + drgb*(i-1)/length($drhist),'linewidth',3)
+    #     plot(px(1),py(1),'r.','markersize',20)
+    # end
+    # plot($xf_dr,$xf_cr,'g.','markersize',20)
+    # xlabel('Downrange (km)')
+    # ylabel('Crossrange (km)')
+    # hold off
+    # saveas(gcf,'range.png')
+    # "
+
+    ## this one is for plotting
     mat"
     figure
     hold on
     rgb1 = [29 38 113]/255;
-    rgb2 = [195 55 100]/255;
+    rgb2 = 1.3*[195 55 100]/255;
     drgb = rgb2-rgb1;
     for i = 1:length($drhist)
         px = $drhist{i};
         py = $crhist{i};
-        plot(px,py,'Color',rgb1 + drgb*(i-1)/length($drhist),'linewidth',3)
-        plot(px(1),py(1),'r.','markersize',20)
+        if i < 5
+            plot(px,py,'Color',rgb1 + drgb*(i-1)/4,'linewidth',3)
+        end
+        %plot(px(1),py(1),'r.','markersize',20)
     end
     plot($xf_dr,$xf_cr,'g.','markersize',20)
-    xlabel('Downrange (km)')
-    ylabel('Crossrange (km)')
+    xlabel('downrange (km)')
+    ylabel('crossrange (km)')
     hold off
-    saveas(gcf,'range.png')
+    %saveas(gcf,'range.png')
+    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    matlab2tikz('bankaoa_track.tex')
+    close all
     "
+    # mat"
+    # figure
+    # hold on
+    # rgb1 = [29 38 113]/255;
+    # rgb2 = [195 55 100]/255;
+    # drgb = rgb2-rgb1;
+    # for i = 1:length($althist)
+    #     px = $drhist{i};
+    #     alt = $althist{i};
+    #     plot(px,alt,'Color',rgb1 + drgb*(i-1)/length($althist),'linewidth',3)
+    #     plot(px(1),alt(1),'r.','markersize',20)
+    # end
+    # plot([0,800],ones( 2,1)*10,'r' )
+    # plot($xf_dr,10,'g.','markersize',20)
+    # xlabel('Downrange (km)')
+    # ylabel('Altitude (km)')
+    # hold off
+    # saveas(gcf,'alt.png')
+    # "
+
+    # this one is for plotting
     mat"
     figure
     hold on
     rgb1 = [29 38 113]/255;
-    rgb2 = [195 55 100]/255;
+    rgb2 = 1.3*[195 55 100]/255;
     drgb = rgb2-rgb1;
     for i = 1:length($althist)
         px = $drhist{i};
         alt = $althist{i};
-        plot(px,alt,'Color',rgb1 + drgb*(i-1)/length($althist),'linewidth',3)
-        plot(px(1),alt(1),'r.','markersize',20)
+        if i < 5
+            colo = drgb*(i-1)/4;
+            plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
+        end
+        %plot(px(1),alt(1),'r.','markersize',20)
     end
     plot([0,800],ones( 2,1)*10,'r' )
     plot($xf_dr,10,'g.','markersize',20)
-    xlabel('Downrange (km)')
-    ylabel('Altitude (km)')
+    xlim([100 380])
+    xlabel('downrange (km)')
+    ylabel('altitude (km)')
     hold off
-    saveas(gcf,'alt.png')
+    %saveas(gcf,'alt.png')
+    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    matlab2tikz('bankaoa_alt.tex')
+    close all
     "
 
-    AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
-    mat"
-    figure
-    hold on
-    title('Angle of Attack')
-    plot(rad2deg($AoA))
-    hold off
-    "
-    mat"
-    figure
-    hold on
-    title('Bank Angle')
-    plot(rad2deg($bank))
-    hold off
-    "
+    # AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
+    # mat"
+    # figure
+    # hold on
+    # title('Angle of Attack')
+    # plot(rad2deg($AoA))
+    # hold off
+    # "
+    # mat"
+    # figure
+    # hold on
+    # title('Bank Angle')
+    # plot(rad2deg($bank))
+    # hold off
+    # "
 
     return Xsim
 end
