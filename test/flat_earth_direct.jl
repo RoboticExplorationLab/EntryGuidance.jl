@@ -2,14 +2,74 @@ using Convex, Mosek, MosekTools
 using Attitude, LinearAlgebra, ForwardDiff, MATLAB
 using StaticArrays
 using SparseArrays
+struct EntryVehicle{T} <: TO.AbstractModel
+    evmodel::EG.CartesianModel{T}
+end
 
+
+function evdynamics(model::EntryVehicle, x, u)
+    #unpack control
+    α = deg2rad(18)
+    #unpack state
+    r = x[1:3]
+    v = x[4:6]
+    V = norm(v)
+
+    #atmospheric density
+    ρ = atmo_uncert*atmospheric_density([r[1]+model.evmodel.planet.R,0,0], model.evmodel)
+
+    #Calculate drag acceleration
+    Cd = drag_coefficient(α, model.evmodel)
+    A = model.evmodel.vehicle.A
+    m = model.evmodel.vehicle.m
+    D = 0.5*Cd*ρ*A*V*V/m
+
+    #Calculate lift acceleration
+    Cl = lift_coefficient(α, model.evmodel)
+    L = 0.5*Cl*ρ*A*V*V/m
+
+    #get gravity
+    g = gravitational_acceleration([r[1]+model.evmodel.planet.R,0,0], model.evmodel)
+    # @show r
+    # @show g
+    @assert g[2] ≈ 0.0
+    @assert g[3] ≈ 0.0
+    @assert g[1] < 0.0
+
+
+    #Aerodynamic acceleration
+    e1 = cross([1;0;0],v)
+    e1 = e1/norm(e1)
+    e2 = cross(v,e1)
+    e2 = e2/norm(e2)
+    a = -(D/norm(v))*v + L*u[1]*e1 + L*u[2]*e2
+
+    v̇ = a + g #- 2*Ω̂*v - Ω̂*Ω̂*r
+
+    return [v; v̇]
+end
 function rk4(model,x_n,u,dt)
-    k1 = dt*dynamics(model,x_n,u)
-    k2 = dt*dynamics(model,x_n+k1/2,u)
-    k3 = dt*dynamics(model,x_n+k2/2,u)
-    k4 = dt*dynamics(model,x_n+k3,u)
+    dt = u[3]/3600
+    k1 = dt*evdynamics(model,x_n,u)
+    k2 = dt*evdynamics(model,x_n+k1/2,u)
+    k3 = dt*evdynamics(model,x_n+k2/2,u)
+    k4 = dt*evdynamics(model,x_n+k3,u)
     return (x_n + (1/6)*(k1 + 2*k2 + 2*k3 + k4))
 end
+struct EntryVehicle{T} <: TO.AbstractModel
+    evmodel::EG.CartesianModel{T}
+end
+model = EntryVehicle(CartesianMSLModel())
+
+#Initial conditions for MSL
+Rm = model.evmodel.planet.R
+r0 = [125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
+V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
+γ0 = -15.474*(pi/180.0) #Flight path angle at interface
+v0 = V0*[sin(γ0), cos(γ0), 0.0]
+x0 = [r0; v0]
+
+xf = [10,450, 8.0;0;0;0]
 function getAB(model,X,U,dt)
     N = length(X)
     n = length(X[1])
@@ -40,7 +100,7 @@ function santize(X,U,A,B)
     @assert (length(X) == length(U)+1)
     @assert (length(A) == length(U))
 end
-function mpc(model::SAT,X,U,xf,dt)
+function mpc(model::EntryVehicle,X,U,xf,dt)
 
     # linearize the system
     A,B = getAB(model,X,U,dt)
@@ -56,32 +116,34 @@ function mpc(model::SAT,X,U,xf,dt)
     # initial condition of all zeros for δx
     cons = Constraint[ δx[:,1]==zeros(length(X[1])) ]
 
+    # goal constraint
+    push!(cons, X[N][1:3] + δx[1:3,end] == xf[1:3])
+
+
     # dynamics constraints
     for i = 1:N-1
         dynamics_res = X[i+1] - rk4(model,X[i],U[i],dt)
         push!(cons, δx[:,i+1] == A[i]*δx[:,i] + B[i]*δu[:,i] - dynamics_res)
+    end
 
-        push!(cons, U[i] + δu[:,i] <=  ones(3))
-        push!(cons, U[i] + δu[:,i] >= -ones(3))
+    # control constraints
+    for i = 1:N-1
+        push!(cons, norm(δu[1:2,i],2) <= 1.0)
+        push!(cons,δu[3,i]>= 0.5)
+        push!(cons,δu[3,i]<= 3.0)
+    end
+
+    p = 0
+    for i = 1:N-1
+        # regularize U
+        p += sumsquares(U[i][1:2] + δu[1:2,i])
+
+        # cost the dt to encourage it to be around 2 seconds
+        p += sumsquares( (U[i][3] + δu[3,i]) - 2  )
     end
 
     # trust region stuff
-    push!(cons, norm(vec(δx))<=2.0)
-
-    # LQR cost
-    Q = Diagonal(ones(6))
-    R = Diagonal(ones(3))
-    p = 0
-    # for i = 1:N-1
-    #     p += quadform((X[i] + δx[:,i] - xf),Q)
-    #     p += quadform(U[i] + δu[:,i],R)
-    # end
-    # p += quadform((X[N] + δx[:,N] - xf),Q)
-    for i = 1:N-1
-        p += sumsquares((X[i] + δx[:,i] - xf))
-        p += sumsquares(U[i] + δu[:,i])
-    end
-    p += norm((X[N] + δx[:,N] - xf))
+    push!(cons, norm(vec(δx))<=200.0)
 
     # solve problem
     problem = minimize(p, cons)
@@ -103,18 +165,18 @@ end
 function runsqp()
 
 
-    N = 50
-    dt = .5
+    N = 80
+    dt = 69
 
-    x0 = [p_from_phi(deg2rad(170)*normalize([1;2;3])); zeros(3)]
-    xf = zeros(6)
+    # x0 = [p_from_phi(deg2rad(170)*normalize([1;2;3])); zeros(3)]
+    # xf = zeros(6)
     X = [copy(x0) for i = 1:N]
-    U = [zeros(3) for i = 1:(N-1)]
+    U = [[zeros(3)] for i = 1:(N-1)]
 
-    model = SAT(Diagonal(SA[1,2,3.0]))
+    # model = SAT(Diagonal(SA[1,2,3.0]))
 
     for i = 1:10
-        X2, U2 = mpc(model::SAT,X,U,xf,dt)
+        X2, U2 = mpc(model::EntryVehicle,X,U,xf,dt)
 
         @show norm(X - X2)
         X = deepcopy(X2)
