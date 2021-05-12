@@ -83,13 +83,10 @@ x0 = SVector{n}([r0; v0])
 
 N = 80
 X = [zeros(6) for i = 1:N]
-U = [[0;0.5] for i =1:N-1]
+U = [[0;0.8] for i =1:N-1]
 X[1] = deepcopy(x0)
 
 for i = 1:(N-1)
-
-    # u = [0;α0]
-    # U[i] = [randn();α0]
     X[i+1] = rk4(model,X[i],U[i],2/3600,1)
 end
 
