@@ -130,7 +130,7 @@ function mpc(model::EntryVehicle,X,U,xf,dt)
         # p += sumsquares( δu[1:2,i])
 
         # cost the dt to encourage it to be around 2 seconds
-        p += sumsquares( (U[i][3] + δu[3,i]) - 2  )
+        # p += sumsquares( (U[i][3] + δu[3,i]) - 2  )
     end
 
     p += 100*sumsquares(X[N][2:3] + δx[2:3,end] - xf[2:3])
@@ -175,7 +175,7 @@ function runsqp()
 
     cc = c_val(model,X,U,dt)
 
-    TT = 15
+    TT = 25
     c_hist = zeros(TT)
     dx_hist = zeros(TT)
     @show norm(cc)

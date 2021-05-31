@@ -50,7 +50,7 @@ for i = 1:(N-1)
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
-        end_idx = i + 1
+        end_idx = i + 1a
         break
     end
 end
