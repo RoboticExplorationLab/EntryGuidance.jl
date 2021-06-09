@@ -41,9 +41,9 @@ function hdot(x,u)
 end
 
 function cbf(x,u)
-    if h_safety(x)<2.0
+    if h_safety(x)<10.0
         u_cvx = Variable(length(u))
-        α = .2
+        α = 0.1
         problem = minimize(sumsquares(u-u_cvx), [hdot(x,u_cvx) >= -α*h_safety(x)])
         solve!(problem, () -> Mosek.Optimizer())
         return evaluate(u_cvx)
