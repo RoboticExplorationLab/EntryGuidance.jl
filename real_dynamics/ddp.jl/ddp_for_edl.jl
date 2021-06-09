@@ -49,7 +49,7 @@ function edl_ddp_pass()
 
 
     # do a ddp backwards pass on this
-    P = backpass(model,X,U,xf,dt)
+    P = backpass(model,X,U,xf,dt,true)
 
 
     alt, dr, cr = postprocess(model,X,x0)

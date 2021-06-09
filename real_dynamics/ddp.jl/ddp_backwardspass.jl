@@ -1,3 +1,5 @@
+using TensorCore
+
 function Avec(model,x,u,dt)
     return vec(ForwardDiff.jacobian(dx->rk4(model,dx,u,dt),x))
 end
@@ -5,8 +7,7 @@ function Bvec(model,x,u,dt)
     return vec(ForwardDiff.jacobian(du->rk4(model,x,du,dt),u))
 end
 
-function backpass(model,xtraj,utraj,xgoal,dt)
-ddp = false
+function backpass(model,xtraj,utraj,xgoal,dt,ddp)
 Nt = length(xtraj)
 Nx = length(xtraj[1])
 Nu = length(utraj[1])
