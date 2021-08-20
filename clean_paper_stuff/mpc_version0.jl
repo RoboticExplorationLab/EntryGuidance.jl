@@ -195,7 +195,7 @@ end
     hold off
     %saveas(gcf,'range.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    % matlab2tikz('bankaoa_track.tex')
+    matlab2tikz('bankaoa_track.tex')
     close all
     "
     # mat"
@@ -242,7 +242,7 @@ end
     hold off
     %saveas(gcf,'alt.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    % matlab2tikz('bankaoa_alt.tex')
+    matlab2tikz('bankaoa_alt.tex')
     close all
     "
 

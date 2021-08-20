@@ -13,6 +13,7 @@ using SuiteSparse
 using SparseArrays
 using Interpolations
 
+
 include(joinpath(@__DIR__,"dynamics.jl"))
 include(joinpath(@__DIR__,"rollout_stuff.jl"))
 include(joinpath(@__DIR__,"mpc.jl"))
@@ -21,7 +22,7 @@ include(joinpath(@__DIR__,"post_process.jl"))
 function first_test()
 
 # evmodel = CartesianMSLModel()
-model = EntryVehicle(CartesianMSLModel(),1e4)
+model = EntryVehicle(CartesianMSLModel(),1e1)
 #Initial conditions for MSL
 Rm = model.evmodel.planet.R
 r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
@@ -46,7 +47,8 @@ U = [@SArray zeros(2) for i = 1:N-1]
 X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
-    U[i] = getmaxL(model,X[i])*[0;.5]
+    # U[i] = getmaxL(model,X[i])*[0;.5]
+    U[i] = [0;0.5]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
@@ -62,7 +64,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 6
+T = 30
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [zeros(2) for i = 1:T-1]
@@ -195,8 +197,8 @@ end
     hold off
     %saveas(gcf,'range.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    % matlab2tikz('bankaoa_track.tex')
-    close all
+    %matlab2tikz('bankaoa_track.tex')
+    %close all
     "
     # mat"
     # figure
@@ -242,8 +244,8 @@ end
     hold off
     %saveas(gcf,'alt.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    % matlab2tikz('bankaoa_alt.tex')
-    close all
+    %matlab2tikz('bankaoa_alt.tex')
+    %close all
     "
 
     # AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
