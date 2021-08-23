@@ -22,7 +22,7 @@ include(joinpath(@__DIR__,"post_process.jl"))
 function first_test()
 
 # evmodel = CartesianMSLModel()
-model = EntryVehicle(CartesianMSLModel(),1e1)
+model = EntryVehicle(CartesianMSLModel(),1.0)
 #Initial conditions for MSL
 Rm = model.evmodel.planet.R
 r0 = [Rm+125.0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
@@ -64,7 +64,8 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 30
+T = 90
+T_vec = [(i-1)*dt*3600 for i = 1:T]
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [zeros(2) for i = 1:T-1]
@@ -86,7 +87,7 @@ for i = 1:T-1
     A,B = getAB(model,Xr,Ur,dt)
 
     # MPC solve
-    Xc, Uc = eg_mpc(model::EntryVehicle,A,B,Xr,Ur,xf)
+    Xc, Uc = eg_mpc(model::EntryVehicle,A,B,Xr,Ur,xf,i)
 
     cvxX = mat_from_vec(Xc)
     cvxU = mat_from_vec(Uc)
@@ -99,6 +100,8 @@ for i = 1:T-1
     Xsim[i+1] = rk4(model::EntryVehicle,Xsim[i],Usim[i],dt)
 
 end
+
+    althist_sim, drhist_sim, crhist_sim = postprocess(model,Xsim,x0)
     # xm = mat_from_vec(Xsim)
     # # mat"
     # # figure
@@ -189,8 +192,9 @@ end
         if i < 5
             plot(px,py,'Color',rgb1 + drgb*(i-1)/4,'linewidth',3)
         end
-        %plot(px(1),py(1),'r.','markersize',20)
+        plot(px(1),py(1),'r.','markersize',20)
     end
+    %plot($drhist_sim,$crhist_sim,'r')
     plot($xf_dr,$xf_cr,'g.','markersize',20)
     xlabel('downrange (km)')
     ylabel('crossrange (km)')
@@ -234,8 +238,9 @@ end
             colo = drgb*(i-1)/4;
             plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
         end
-        %plot(px(1),alt(1),'r.','markersize',20)
+        plot(px(1),alt(1),'r.','markersize',20)
     end
+    %plot($drhist_sim,$althist_sim,'r')
     plot([0,800],ones( 2,1)*10,'r' )
     plot($xf_dr,10,'g.','markersize',20)
     xlim([100 380])
@@ -248,14 +253,68 @@ end
     %close all
     "
 
-    # AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
-    # mat"
-    # figure
-    # hold on
-    # title('Angle of Attack')
-    # plot(rad2deg($AoA))
-    # hold off
-    # "
+    # plot both at the same time
+    mat"
+    figure
+    hold on
+    subplot(1,2,1)
+    hold on
+    rgb1 = [29 38 113]/255;
+    rgb2 = 1.3*[195 55 100]/255;
+    drgb = rgb2-rgb1;
+    for i = 1:length($drhist)
+        px = $drhist{i};
+        py = $crhist{i};
+        if i < 5
+            plot(px,py,'Color',rgb1 + drgb*(i-1)/4,'linewidth',3)
+        end
+        plot(px(1),py(1),'r.','markersize',20)
+    end
+    %plot($drhist_sim,$crhist_sim,'r')
+    plot($xf_dr,$xf_cr,'g.','markersize',20)
+    xlabel('downrange (km)')
+    ylabel('crossrange (km)')
+    hold off
+
+    subplot(1,2,2)
+    hold on
+    rgb1 = [29 38 113]/255;
+    rgb2 = 1.3*[195 55 100]/255;
+    drgb = rgb2-rgb1;
+    for i = 1:length($althist)
+        px = $drhist{i};
+        alt = $althist{i};
+        if i < 5
+            colo = drgb*(i-1)/4;
+            plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
+        end
+        plot(px(1),alt(1),'r.','markersize',20)
+    end
+    %plot($drhist_sim,$althist_sim,'r')
+    plot([0,800],ones( 2,1)*10,'r' )
+    plot($xf_dr,10,'g.','markersize',20)
+    xlim([100 380])
+    xlabel('downrange (km)')
+    ylabel('altitude (km)')
+    hold off
+    "
+
+
+    AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
+
+    # @infiltrate
+    # error()
+    mat"
+    figure
+    hold on
+    title('Aero Angles')
+    plot($T_vec(1:end-1)/60,rad2deg($AoA))
+    plot($T_vec(1:end-1)/60, rad2deg($bank))
+    legend('Angle of Attack (deg)' ,'Bank Angle (deg)')
+    xlabel('time (s)')
+    ylabel('Angle (deg)')
+    hold off
+    "
     # mat"
     # figure
     # hold on

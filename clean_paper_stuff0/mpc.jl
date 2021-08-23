@@ -2,7 +2,7 @@ using Convex, Mosek, MosekTools
 
 
 
-function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
+function eg_mpc(model::EntryVehicle,A,B,X,U,xf, mpc_iteration)
 
     # quick size cehcks
     @assert (length(A) == length(B))
@@ -32,12 +32,15 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf)
     end
 
 
-    α = 1e-10
+    α = 1
     rr = normalize(xf[1:3])
     Qn = I - rr*rr'
 
-    # problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) +  α*sumsquares(vec(δu)) , cons)
-    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) , cons)
+    problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) +  α*sumsquares(vec(δu)) , cons)
+
+    # be gentle with the first 5 control inputs
+
+    # problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) , cons)
     Convex.solve!(problem, () -> Mosek.Optimizer())
 
 

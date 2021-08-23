@@ -15,7 +15,7 @@ function getmaxL(model,x)
     L = 0.5*Cl*ρ*A*dot(v,v)/m
 
     # return scaled version
-    return L/model.uscale
+    return L
 end
 struct EntryVehicle{T}
     evmodel::EG.CartesianModel{T}
