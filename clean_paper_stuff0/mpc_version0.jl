@@ -56,7 +56,7 @@ X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
     # U[i] = getmaxL(model,X[i])*[0;.5]
-    U[i] = [0.0;0.5]
+    U[i] = [-0.05;0.5]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
@@ -120,7 +120,7 @@ end
     althist_sim, drhist_sim, crhist_sim = postprocess(model,Xsim,x0)
     xf_dr, xf_cr = rangedistances(model,xf,x0)
 
-    num2plot = 5.0
+    num2plot = 15.0
     ## this one is for plotting
     mat"
     figure
