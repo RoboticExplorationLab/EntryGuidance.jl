@@ -16,8 +16,8 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,ϵ_f)
     @assert norm(x0 - X[1]) ≈ 0
 
     # variables
-    δx = Variable(7,N)
-    δu = Variable(2,N-1)
+    δx = Variable(8,N)
+    δu = Variable(1,N-1)
 
     # dynamics constraints
     cons = Constraint[ δx[:,1]==δx0 ]
@@ -26,29 +26,23 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,ϵ_f)
         push!(cons, δx[:,i+1] == sparse(A[i])*δx[:,i] + B[i]*δu[:,i])
     end
 
-    # lift vector constraints
-    for i = 1:N-1
-        push!(cons, norm(U[i] + δu[:,i]) <= 1.0)
-    end
-
     γ = 1e5         # miss distance penalty
     α = 1 # regularizer
     β = 1 # control penalty
 
-    # p = 0.0
-    # for i = 1:N
-    #     ϵ = X[i][7] + δx[7,i]
-    #     p+= square(ϵ - ϵ_f)
-    # end
-    # Xm = mat_from_vec(X)
-    p = square(X[N][7] + δx[7,N] - ϵ_f)
+    for i = 1:length(X)
+        push!(cons, abs(X[i][7] + δx[7,i]) <= deg2rad(180) )
+    end
 
+    p = square(X[N][8] + δx[8,N] - ϵ_f)
 
-    # @infiltrate
-    # error()
-    # p = sumsquares( vec(Xm[7,:]) + vec(δx[7,:]) - ϵ_f*ones(length(X)) )
-    # p = 1
-    problem = minimize(γ*p +  α*sumsquares(vec(δu)) + β*sumsquares(vec(mat_from_vec(U)) + vec(δu)), cons)
+    # trust region
+    # push!(cons, norm(δx[7,:],Inf) <= deg2rad(10))
+    for i = 1:N
+        push!(cons, abs(δx[7,:]) <= deg2rad(10))
+    end
+
+    problem = minimize(γ*p +  α*sumsquares(vec(δu)), cons)
 
     Convex.solve!(problem, () -> Mosek.Optimizer())
 
