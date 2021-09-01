@@ -9,6 +9,12 @@ function postprocess(model::EntryVehicle,X,x0)
     end
     return alt, dr, cr
 end
+function epsilon(model::EntryVehicle,x)
+    μ = model.evmodel.planet.gravity.μ
+    r = x[1:3]
+    v = x[4:6]
+    return (dot(v,v)/2 - μ/norm(r))/1e8
+end
 function processU(model::EntryVehicle,X,U)
     N = length(X)
     AoA = zeros(N-1)
