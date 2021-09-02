@@ -37,10 +37,10 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,ϵ_f)
     p = square(X[N][8] + δx[8,N] - ϵ_f)
 
     # trust region
-    # push!(cons, norm(δx[7,:],Inf) <= deg2rad(10))
-    for i = 1:N
-        push!(cons, abs(δx[7,:]) <= deg2rad(10))
-    end
+    push!(cons, norm(δx[7,:],Inf) <= deg2rad(10))
+    # for i = 1:N
+    #     push!(cons, abs(δx[7,:]) <= deg2rad(10))
+    # end
 
     problem = minimize(γ*p +  α*sumsquares(vec(δu)), cons)
 
