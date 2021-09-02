@@ -21,10 +21,13 @@ include(joinpath(@__DIR__,"post_process.jl"))
 
 function first_test()
 
-
-alt0= 145.0
-γ0 = deg2rad(-15)
-V0 = 12.845*3600
+# old IC's
+# alt0= 145.0
+# γ0 = deg2rad(-15)
+# V0 = 12.845*3600
+alt0= 125.0
+γ0 = deg2rad(-13.5)
+V0 = 10.845*3600
 
 # evmodel = CartesianMSLModel()
 model = EntryVehicle(CartesianMSLModel(),1.0)
@@ -40,14 +43,14 @@ x0 = [r0;v0;epsilon0]
 
 # first rollout
 dt = 2/3600
-N = 100
+N = 120
 X = NaN*[@SArray zeros(7) for i = 1:N]
 U = [@SArray zeros(2) for i = 1:N-1]
 
 X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
-    U[i] = [0;0.65]
+    U[i] = [0;0.8]
     X[i+1] = rk4(model,X[i],U[i],dt)
 end
 
@@ -114,7 +117,7 @@ hold off
 # hold off
 # "
 
-# alt = [norm(X[i][1:3])-model.evmodel.planet.R for i = 1:length(X)]
+alt = [norm(X[i][1:3])-model.evmodel.planet.R for i = 1:length(X)]
 #
 # epsilon2 = zeros(length(X))
 # for i = 1:length(X)
@@ -125,12 +128,13 @@ hold off
 # end
 # # @infiltrate
 #
-# mat"
-# figure
-# hold on
-# plot($alt)
-# hold off
-# "
+mat"
+figure
+hold on
+title('alt')
+plot($alt)
+hold off
+"
 #
 # mat"
 # figure

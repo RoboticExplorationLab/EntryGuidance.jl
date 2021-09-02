@@ -32,8 +32,8 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,ϵ_f)
     end
 
     γ = 1e5         # miss distance penalty
-    α = 1 # regularizer
-    β = 1 # control penalty
+    α = 1e3/length(U) # regularizer
+    β = 1/length(U) # control penalty
 
     # p = 0.0
     # for i = 1:N
