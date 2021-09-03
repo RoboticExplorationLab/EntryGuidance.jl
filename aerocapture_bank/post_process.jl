@@ -15,6 +15,24 @@ function epsilon(model::EntryVehicle,x)
     v = x[4:6]
     return (dot(v,v)/2 - μ/norm(r))/1e8
 end
+
+function peri_apo(model::EntryVehicle,x)
+    r = x[1:3]
+    v = x[4:6]
+    μ = model.evmodel.planet.gravity.μ
+    h = cross(r,v)
+
+    e_vec = cross(v,h)/μ - normalize(r)
+    e = norm(e_vec)
+    if e > 1
+        return NaN, NaN
+    else
+        a = -μ/(2*epsilon(model,x)*1e8)
+        rp = a*(1-e)
+        ra = a*(1+e)
+        return rp, ra
+    end
+end
 function processU(model::EntryVehicle,X,U)
     N = length(X)
     AoA = zeros(N-1)

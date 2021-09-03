@@ -31,6 +31,8 @@ model = EntryVehicle(CartesianMSLModel(),1.0)
 #Initial conditions for MSL
 Rm = model.evmodel.planet.R
 r0 = [Rm+alt0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
+# @show norm(r0)
+# error()
 # V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 # γ0 = -15.474*(pi/180.0) #Flight path angle at interface
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
@@ -110,6 +112,21 @@ figure
 hold on
 title('Altitude')
 plot($alt)
+hold off
+"
+
+# e_hist = [peri_apo(model,X[i]) for i = 1:length(X)]
+rp_hist = zeros(length(X))
+ra_hist = zeros(length(X))
+for i = 1:length(X)
+    rp_hist[i], ra_hist[i] = peri_apo(model,X[i])
+end
+mat"
+figure
+hold on
+plot($rp_hist)
+plot($ra_hist)
+legend('Perigee','Apogee')
 hold off
 "
 
