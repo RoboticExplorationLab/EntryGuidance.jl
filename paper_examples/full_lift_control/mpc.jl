@@ -87,11 +87,12 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf, mpc_iteration)
     Qn = I - rr*rr'
 
     # trust region
-    push!(cons, norm( Qn*δx[1:3,N]) <= 5)
+    # push!(cons, norm( Qn*δx[1:3,N]) <= 5)
 
     γ = 100         # miss distance penalty
     α = 1/length(U) # regularizer
-    β = 1/length(U) # control penalty
+    # β = 1/length(U) # control penalty
+    β = 0 
 
 
     problem = minimize(γ*norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) +  α*norm(vec(δu)) + β*sumsquares(vec(mat_from_vec(U)) + vec(δu)), cons)

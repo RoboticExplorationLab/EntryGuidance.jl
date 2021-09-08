@@ -56,7 +56,7 @@ X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
     # U[i] = getmaxL(model,X[i])*[0;.5]
-    U[i] = [-0.05;0.5]
+    U[i] = [0.00;0.5]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
@@ -72,7 +72,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 90
+T = 7
 T_vec = [(i-1)*dt*3600 for i = 1:T]
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
@@ -134,7 +134,7 @@ end
         if i < ($num2plot +1)
             plot(px,py,'Color',rgb1 + drgb*(i-1)/($num2plot),'linewidth',3)
         end
-        plot(px(1),py(1),'r.','markersize',20)
+        %plot(px(1),py(1),'r.','markersize',20)
     end
     %plot($drhist_sim,$crhist_sim,'r')
     plot($xf_dr,$xf_cr,'g.','markersize',20)
@@ -162,7 +162,7 @@ end
             colo = drgb*(i-1)/$num2plot;
             plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
         end
-        plot(px(1),alt(1),'r.','markersize',20)
+        %plot(px(1),alt(1),'r.','markersize',20)
     end
     %plot($drhist_sim,$althist_sim,'r')
     plot([0,800],ones( 2,1)*10,'r' )
