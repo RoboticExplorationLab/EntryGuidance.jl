@@ -61,6 +61,7 @@ for i = 1:(N-1)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
         end_idx = i + 1
+        U[end_idx] = copy(U[i])
         break
     end
 end
@@ -95,11 +96,12 @@ for i = 1:T-1
     @assert Xsim[i] == Xr[1]
 
     althist[i], drhist[i], crhist[i] = postprocess(model::EntryVehicle,Xr,x0)
-    # push!(althist,alt)
-    # push!(drhist,dr)
-    # push!(crhist,cr)
+
     # jacobians
     A,B = getAB(model,Xr,Ur,dt)
+
+    # @infiltrate
+    # error()
 
     # MPC solve
     Xc, Uc = eg_mpc(model::EntryVehicle,A,B,Xr,Ur,xf,i)
@@ -111,8 +113,6 @@ for i = 1:T-1
     # actual dynamics
     Usim[i] = copy(Uc[1])
 
-    # @infiltrate
-    # error()
     Xsim[i+1] = rk4(model::EntryVehicle,Xsim[i],Usim[i],dt)
 
 end
@@ -120,7 +120,7 @@ end
     althist_sim, drhist_sim, crhist_sim = postprocess(model,Xsim,x0)
     xf_dr, xf_cr = rangedistances(model,xf,x0)
 
-    num2plot = 15.0
+    num2plot = 4.0
     ## this one is for plotting
     mat"
     figure
@@ -241,8 +241,10 @@ end
     mat"
     figure
     hold on
-    plot($actual_miss)
-    plot($predicted_miss)
+    plot(0:(length($actual_miss)-1), $predicted_miss)
+    plot(0:(length($actual_miss)-1), $actual_miss)
+    legend('Predicted Miss Distance','Actual Miss Distance')
+    set(gca, 'YScale', 'log')
     hold off "
 
 
