@@ -57,6 +57,7 @@ for i = 1:(N-1)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
         end_idx = i + 1
+        U[end_idx] = [0.0;0.5]
         break
     end
 end
