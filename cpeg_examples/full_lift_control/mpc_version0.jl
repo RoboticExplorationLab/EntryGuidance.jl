@@ -56,12 +56,11 @@ X[1] = deepcopy(x0)
 end_idx = NaN
 for i = 1:(N-1)
     # U[i] = getmaxL(model,X[i])*[0;.5]
-    U[i] = [0.00;0.5]
+    U[i] = [0.0;0.5]
     X[i+1] = rk4(model,X[i],U[i],dt)
     if altitude(model,X[i+1])<10
         @info "under altitude on first rollout"
         end_idx = i + 1
-        U[end_idx] = copy(U[i])
         break
     end
 end
@@ -73,7 +72,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 7
+T = 90
 T_vec = [(i-1)*dt*3600 for i = 1:T]
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
@@ -96,12 +95,11 @@ for i = 1:T-1
     @assert Xsim[i] == Xr[1]
 
     althist[i], drhist[i], crhist[i] = postprocess(model::EntryVehicle,Xr,x0)
-
+    # push!(althist,alt)
+    # push!(drhist,dr)
+    # push!(crhist,cr)
     # jacobians
     A,B = getAB(model,Xr,Ur,dt)
-
-    # @infiltrate
-    # error()
 
     # MPC solve
     Xc, Uc = eg_mpc(model::EntryVehicle,A,B,Xr,Ur,xf,i)
@@ -113,6 +111,8 @@ for i = 1:T-1
     # actual dynamics
     Usim[i] = copy(Uc[1])
 
+    # @infiltrate
+    # error()
     Xsim[i+1] = rk4(model::EntryVehicle,Xsim[i],Usim[i],dt)
 
 end
@@ -120,7 +120,7 @@ end
     althist_sim, drhist_sim, crhist_sim = postprocess(model,Xsim,x0)
     xf_dr, xf_cr = rangedistances(model,xf,x0)
 
-    num2plot = 4.0
+    num2plot = 15.0
     ## this one is for plotting
     mat"
     figure
@@ -134,7 +134,7 @@ end
         if i < ($num2plot +1)
             plot(px,py,'Color',rgb1 + drgb*(i-1)/($num2plot),'linewidth',3)
         end
-        %plot(px(1),py(1),'r.','markersize',20)
+        plot(px(1),py(1),'r.','markersize',20)
     end
     %plot($drhist_sim,$crhist_sim,'r')
     plot($xf_dr,$xf_cr,'g.','markersize',20)
@@ -162,7 +162,7 @@ end
             colo = drgb*(i-1)/$num2plot;
             plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
         end
-        %plot(px(1),alt(1),'r.','markersize',20)
+        plot(px(1),alt(1),'r.','markersize',20)
     end
     %plot($drhist_sim,$althist_sim,'r')
     plot([0,800],ones( 2,1)*10,'r' )
@@ -241,10 +241,8 @@ end
     mat"
     figure
     hold on
-    plot(0:(length($actual_miss)-1), $predicted_miss)
-    plot(0:(length($actual_miss)-1), $actual_miss)
-    legend('Predicted Miss Distance','Actual Miss Distance')
-    set(gca, 'YScale', 'log')
+    plot($actual_miss)
+    plot($predicted_miss)
     hold off "
 
 

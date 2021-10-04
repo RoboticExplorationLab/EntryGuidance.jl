@@ -74,13 +74,21 @@ for i = 1:T
     U = eg_mpc(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
 
 end
+t_vec = (0:(length(X)-1))*dt*3600
 
 
-
+# @infiltrate
+# error()
+pme = abs.(eps_hist .- ϵ_f)
 mat"
 figure
 hold on
-plot($eps_hist)
+%plot($eps_hist)
+plot(0:($T-1),$pme,'linewidth',4)
+set(gca, 'YScale', 'log')
+xlabel('Predictor-corrector iteration number')
+ylabel('Terminal specific energy error')
+set(gca,'FontSize',15)
 hold off
 "
 
@@ -89,19 +97,24 @@ for i = 1:length(X)
     eps2[i] = epsilon(model,X[i])
 end
 
-mat"
-figure
-hold on
-plot($eps2)
-hold off
-"
+# mat"
+# figure
+# hold on
+# %plot($t_vec,abs($eps2 - $ϵ_f))
+# plot($t_vec,$eps2)
+# hold off
+# "
 
 Xm = mat_from_vec(X)
 mat"
 figure
 hold on
-title('Bank Angle')
-plot(rad2deg($Xm(7,:)))
+%title('Bank Angle')
+
+plot($t_vec, rad2deg($Xm(7,:)),'linewidth',4)
+xlabel('Time (s)')
+ylabel('Bank Angle (degrees)')
+set(gca,'FontSize',15)
 hold off
 "
 
@@ -111,7 +124,10 @@ mat"
 figure
 hold on
 title('Altitude')
-plot($alt)
+plot($t_vec, $alt,'linewidth',4)
+xlabel('Time (s)')
+ylabel('Altitude (km)')
+set(gca,'FontSize',15)
 hold off
 "
 
@@ -121,14 +137,14 @@ ra_hist = zeros(length(X))
 for i = 1:length(X)
     rp_hist[i], ra_hist[i] = peri_apo(model,X[i])
 end
-mat"
-figure
-hold on
-plot($rp_hist)
-plot($ra_hist)
-legend('Perigee','Apogee')
-hold off
-"
+# mat"
+# figure
+# hold on
+# plot($rp_hist)
+# plot($ra_hist)
+# legend('Perigee','Apogee')
+# hold off
+# "
 
 # Um = mat_from_vec(U)
 #

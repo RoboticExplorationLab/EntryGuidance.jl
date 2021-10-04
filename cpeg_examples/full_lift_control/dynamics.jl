@@ -32,7 +32,7 @@ function evdynamics(model::EntryVehicle, x, u)
 
     #Calculate drag acceleration
     # Cd = drag_coefficient(α, model.evmodel)
-    Cd = drag_coefficient(norm(u)*deg2rad(20), model.evmodel)
+    Cd = drag_coefficient(deg2rad(10), model.evmodel)
     A = model.evmodel.vehicle.A
     m = model.evmodel.vehicle.m
     D = 0.5*Cd*ρ*A*dot(v,v)/m

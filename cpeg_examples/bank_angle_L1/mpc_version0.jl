@@ -60,7 +60,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 # @infiltrate
 # error()
-T = 8
+T = 50
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
 Usim = [0.0 for i = 1:T-1]
@@ -191,8 +191,8 @@ end
     hold off
     %saveas(gcf,'range.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    matlab2tikz('bank_track.tex')
-    close all
+    %matlab2tikz('bank_track.tex')
+    %close all
     "
     mat"
     figure
@@ -217,7 +217,7 @@ end
     hold off
     %saveas(gcf,'alt.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    matlab2tikz('bank_alt.tex')
+    %matlab2tikz('bank_alt.tex')
     "
 
     # mat"
