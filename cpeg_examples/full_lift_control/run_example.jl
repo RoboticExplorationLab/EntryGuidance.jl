@@ -111,7 +111,7 @@ althist_sim, drhist_sim, crhist_sim = postprocess(model,Xsim,x0)
 xf_dr, xf_cr = rangedistances(model,xf,x0)
 
 # number of trajectories to plot (this has to be a float for some reason)
-num2plot = 15.0
+num2plot = 90.0
 ## this one is for plotting
 mat"
 figure
