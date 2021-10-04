@@ -8,10 +8,10 @@ using Infiltrator
 using ForwardDiff
 using Convex
 using Mosek, MosekTools
-using COSMO
+# using COSMO
 using SuiteSparse
 using SparseArrays
-using Interpolations
+# using Interpolations
 
 
 include(joinpath(@__DIR__,"dynamics.jl"))
@@ -21,7 +21,6 @@ include(joinpath(@__DIR__,"post_process.jl"))
 
 
 function dist_from_target(X,xf)
-    # Qn = I - xf[1:3]*xf[1:3]'
     rr = normalize(xf[1:3])
     Qn = I - rr*rr'
     return norm(Qn*(X[end][1:3]-xf[1:3]))

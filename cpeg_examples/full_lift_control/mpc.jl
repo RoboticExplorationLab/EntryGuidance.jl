@@ -1,5 +1,5 @@
 using Convex, Mosek, MosekTools
-using JuMP
+# using JuMP
 
 
 function eg_mpc(model::EntryVehicle,A,B,X,U,xf, mpc_iteration)
