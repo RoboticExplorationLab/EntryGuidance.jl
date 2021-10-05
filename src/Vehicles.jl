@@ -19,7 +19,7 @@ end
 
 function drag_coefficient(α::T, s::HypersonicVehicle{S}) where {T,S}
     #Quadratic in angle of attack (valid up to ~10 deg.)
-    Cd = s.Cd0 - s.Cd2*α*α
+    Cd = s.Cd0 + s.Cd2*α*α
 end
 
 function lift_coefficient(α::T, s::HypersonicVehicle{S}) where {T,S}
