@@ -68,7 +68,7 @@ U = U[1:end_idx]
 Uc = deepcopy(U)
 
 # number of simulation steps
-T = 90
+T = 115
 T_vec = [(i-1)*dt*3600 for i = 1:T]
 Xsim = [zeros(6) for i = 1:T]
 Xsim[1] = x0
