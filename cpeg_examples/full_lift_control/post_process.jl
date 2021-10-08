@@ -4,7 +4,7 @@ function postprocess(model::EntryVehicle,X,x0)
     cr = zeros(N)
     dr = zeros(N)
     for i = 1:N
-        alt[i] = altitude(model,X[i])
+        alt[i] = altitude(model,X[i]*model.dscale)
         dr[i],cr[i] = rangedistances(model,X[i],x0)
     end
     return alt, dr, cr

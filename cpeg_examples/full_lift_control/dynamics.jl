@@ -19,13 +19,18 @@ function getmaxL(model,x)
 end
 struct EntryVehicle{T}
     evmodel::EG.CartesianModel{T}
+    dscale::Float64
+    tscale::Float64
     uscale::Float64
 end
 function evdynamics(model::EntryVehicle, x, u)
 
-    #unpack state
-    r = x[SA[1,2,3]]
-    v = x[SA[4,5,6]]
+    # unpack scaling
+    dscale, tscale, uscale = model.dscale, model.tscale, model.uscale
+
+    #unpack state (convert to real units)
+    r = x[SA[1,2,3]]*dscale
+    v = x[SA[4,5,6]]*(dscale/tscale)
 
     #atmospheric density
     ρ = atmospheric_density(r, model.evmodel)
@@ -55,12 +60,16 @@ function evdynamics(model::EntryVehicle, x, u)
     e2 = cross(v,e1)
     e2 = e2/norm(e2)
     D_a = -(D/norm(v))*v #+ L*sin(σ)*e1 + L*cos(σ)*e2
-    L_mag = getmaxL(model,x)
+    L_mag = getmaxL(model,[r;v])
     L_a = L_mag*(e1*u[1] + e2*u[2])
                       # this is rotating planet effects
     v̇ = D_a + L_a + g - 2*Ω̂*v - Ω̂*Ω̂*r
 
     # return [v; v̇]
+    # rescale units
+    v = v/(dscale/tscale)
+    v̇ = v̇/(dscale/tscale^2)
+
     return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3]]
 end
 
