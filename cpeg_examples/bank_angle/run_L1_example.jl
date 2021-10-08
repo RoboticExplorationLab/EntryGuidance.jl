@@ -97,7 +97,8 @@ hold off
 "
 
 l1_traj = (T_vec = T_vec, bank = bank,
-           alt = althist[end], dr = drhist[end],cr = crhist[end])
+           alt = althist[end], dr = drhist[end],cr = crhist[end],
+           xf_dr= xf_dr,xf_cr = xf_cr)
 
 jldsave("cpeg_examples/bank_angle/trajectories/L1_bank.jld2";l1_traj)
 
