@@ -9,16 +9,15 @@ using ForwardDiff
 using Convex
 using Mosek, MosekTools
 using Random
-# using COSMO
 using SuiteSparse
 using SparseArrays
-# using Interpolations
 
 
 include(joinpath(@__DIR__,"dynamics.jl"))
 include(joinpath(@__DIR__,"rollout_stuff.jl"))
 include(joinpath(@__DIR__,"mpc.jl"))
 include(joinpath(@__DIR__,"post_process.jl"))
+include(joinpath(dirname(@__DIR__),"plotting_recipes.jl"))
 
 
 function dist_from_target(X,xf)
@@ -54,21 +53,20 @@ xf = [rf;vf;0]
 x0 = [r0/dscale;v0/(dscale/tscale); σ0]
 xf = [rf/dscale;vf/(dscale/tscale); σ0]
 
-# first rollout to 10km altitude
-dt = (2/3600)/tscale
+# initial control
+dt = (5/3600)/tscale
 N = 180
 X = NaN*[@SArray zeros(7) for i = 1:N]
-U = [[0.000*randn()]  for i = 1:N-1]
+U = [[0.00*randn()]  for i = 1:N-1]
 
 # number of iterations
-T = 25
+T = 15
 
 # vectors for storing trajectory information
 althist = [zeros(2) for i = 1:T]
 drhist = [zeros(2) for i = 1:T]
 crhist = [zeros(2) for i = 1:T]
 dunorm = zeros(T)
-
 
 # main loop
 for i = 1:T
@@ -83,8 +81,8 @@ for i = 1:T
     A,B = getAB(model,X,U,dt)
 
     # correction (convex solve)
-    # Xc, U, dunorm[i] = eg_mpc2(model,A,B,X,U,xf)
-    Xc, U, dunorm[i] = eg_mpc_l1(model,A,B,X,U,xf)
+    Xc, U, dunorm[i] = eg_mpc2(model,A,B,X,U,xf)
+    # Xc, U, dunorm[i] = eg_mpc_l1(model,A,B,X,U,xf)
 
 end
 
@@ -101,8 +99,8 @@ num2plot = float(T)
 mat"
 figure
 hold on
-title('Bank Angle')
-plot($T_vec(1:end-1)/60, rad2deg($bank))
+%title('Bank Angle')
+plot($T_vec(1:end-1)/60, rad2deg($bank),'linewidth',3)
 ylabel('Bank Angle (deg)')
 xlabel('time (min)')
 hold off
@@ -115,59 +113,62 @@ title('Du norm')
 plot($dunorm)
 hold off
 "
+
+
+plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot)
 #
 # this one is for plotting
-mat"
-figure
-hold on
-rgb1 = [29 38 113]/255;
-rgb2 = 1.3*[195 55 100]/255;
-drgb = rgb2-rgb1;
-for i = 1:length($drhist)
-    px = $drhist{i};
-    py = $crhist{i};
-    if i < ($num2plot +1)
-        plot(px,py,'Color',rgb1 + drgb*(i-1)/($num2plot),'linewidth',3)
-    end
-    plot(px(1),py(1),'r.','markersize',20)
-end
-plot($xf_dr,$xf_cr,'g.','markersize',20)
-xlabel('downrange (km)')
-ylabel('crossrange (km)')
-hold off
-%saveas(gcf,'range.png')
-addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-%matlab2tikz('bankaoa_track.tex')
-%close all
-"
-
-# this one is for plotting
-mat"
-figure
-hold on
-rgb1 = [29 38 113]/255;
-rgb2 = 1.3*[195 55 100]/255;
-drgb = rgb2-rgb1;
-for i = 1:length($althist)
-    px = $drhist{i};
-    alt = $althist{i};
-    if i < ($num2plot +1)
-        colo = drgb*(i-1)/$num2plot;
-        plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
-    end
-    plot(px(1),alt(1),'r.','markersize',20)
-end
-plot([0,800],ones( 2,1)*10,'r' )
-plot($xf_dr,10,'g.','markersize',20)
-xlim([0 650])
-xlabel('downrange (km)')
-ylabel('altitude (km)')
-hold off
-%saveas(gcf,'alt.png')
-addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-%matlab2tikz('bankaoa_alt.tex')
-%close all
-"
+# mat"
+# figure
+# hold on
+# rgb1 = [29 38 113]/255;
+# rgb2 = 1.3*[195 55 100]/255;
+# drgb = rgb2-rgb1;
+# for i = 1:length($drhist)
+#     px = $drhist{i};
+#     py = $crhist{i};
+#     if i < ($num2plot +1)
+#         plot(px,py,'Color',rgb1 + drgb*(i-1)/($num2plot),'linewidth',3)
+#     end
+#     plot(px(1),py(1),'r.','markersize',20)
+# end
+# plot($xf_dr,$xf_cr,'g.','markersize',20)
+# xlabel('downrange (km)')
+# ylabel('crossrange (km)')
+# hold off
+# %saveas(gcf,'range.png')
+# addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+# %matlab2tikz('bankaoa_track.tex')
+# %close all
+# "
+#
+# # this one is for plotting
+# mat"
+# figure
+# hold on
+# rgb1 = [29 38 113]/255;
+# rgb2 = 1.3*[195 55 100]/255;
+# drgb = rgb2-rgb1;
+# for i = 1:length($althist)
+#     px = $drhist{i};
+#     alt = $althist{i};
+#     if i < ($num2plot +1)
+#         colo = drgb*(i-1)/$num2plot;
+#         plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
+#     end
+#     plot(px(1),alt(1),'r.','markersize',20)
+# end
+# plot([0,800],ones( 2,1)*10,'r' )
+# plot($xf_dr,10,'g.','markersize',20)
+# xlim([0 650])
+# xlabel('downrange (km)')
+# ylabel('altitude (km)')
+# hold off
+# %saveas(gcf,'alt.png')
+# addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+# %matlab2tikz('bankaoa_alt.tex')
+# %close all
+# "
 
     return 0
 end
