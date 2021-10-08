@@ -18,9 +18,10 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
     xlabel('downrange (km)')
     ylabel('crossrange (km)')
     hold off
-    %saveas(gcf,'range.png')
+    fleg = legend('figure()');
+    set(fleg,'visible','off')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    matlab2tikz(strcat($id,'_crdr.tex'))
+    matlab2tikz(strcat('cpeg_examples/bank_angle/tikz/',$id,'_crdr.tex'))
     %close all
     "
 
@@ -48,6 +49,10 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
     hold off
     %saveas(gcf,'alt.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    fleg = legend('figure()');
+    set(fleg,'visible','off')
+    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    matlab2tikz(strcat('cpeg_examples/bank_angle/tikz/',$id,'_altdr.tex'))
     %matlab2tikz('bankaoa_alt.tex')
     %close all
     "

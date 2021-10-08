@@ -11,7 +11,7 @@ using Mosek, MosekTools
 using Random
 using SuiteSparse
 using SparseArrays
-
+using JLD2
 
 include(joinpath(@__DIR__,"dynamics.jl"))
 include(joinpath(@__DIR__,"rollout_stuff.jl"))
@@ -19,12 +19,6 @@ include(joinpath(@__DIR__,"mpc.jl"))
 include(joinpath(@__DIR__,"post_process.jl"))
 include(joinpath(dirname(@__DIR__),"plotting_recipes.jl"))
 
-
-function dist_from_target(X,xf)
-    rr = normalize(xf[1:3])
-    Qn = I - rr*rr'
-    return norm(Qn*(X[end][1:3]-xf[1:3]))
-end
 
 function first_test()
 Random.seed!(123)
@@ -60,7 +54,7 @@ X = NaN*[@SArray zeros(7) for i = 1:N]
 U = [[0.00*randn()]  for i = 1:N-1]
 
 # number of iterations
-T = 15
+T = 10
 
 # vectors for storing trajectory information
 althist = [zeros(2) for i = 1:T]
@@ -102,6 +96,11 @@ xlabel('time (min)')
 hold off
 "
 
+l2_traj = (T_vec = T_vec, bank = bank,
+           alt = althist[end], dr = drhist[end],cr = crhist[end])
+
+jldsave("cpeg_examples/bank_angle/L2_bank.jld2";l2_traj)
+
 #
 mat"
 figure
@@ -112,7 +111,7 @@ hold off
 "
 
 # number of trajectories to plot (this has to be a float for some reason)
-num2plot = float(T)
+num2plot = 6.0#float(T)
 plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,"L2")
 
     return 0
