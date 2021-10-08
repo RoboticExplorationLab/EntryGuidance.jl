@@ -57,15 +57,20 @@ N = 180
 X = NaN*[@SArray zeros(6) for i = 1:N]
 U = [[-0.05;0.55] + 0.01*randn(2) for i = 1:N-1]
 
+# number of iterations
 T = 7
+
+# vectors for storing trajectory information
 althist = [zeros(2) for i = 1:T]
 drhist = [zeros(2) for i = 1:T]
 crhist = [zeros(2) for i = 1:T]
 dunorm = zeros(T)
+
+# main loop
 for i = 1:T
 
     # prediction
-    X, U, t_vec, t_impact = rollout(model,deepcopy(x0),U,dt)
+    X, U = rollout(model,deepcopy(x0),U,dt)
 
     # pull out altitude, downrange, and crossrange paths for plotting
     althist[i], drhist[i], crhist[i] = postprocess(model,X,x0)
@@ -82,6 +87,10 @@ end
 AoA, bank = processU(model::EntryVehicle,X,U)
 N = length(X)
 T_vec = 0:(dt*3600):((N-1)*(dt*3600))
+xf_dr, xf_cr = rangedistances(model,xf,x0)
+
+# number of trajectories to plot (this has to be a float for some reason)
+num2plot = float(T)
 mat"
 figure
 hold on
@@ -102,11 +111,7 @@ plot($dunorm)
 hold off
 "
 
-xf_dr, xf_cr = rangedistances(model,xf,x0)
-
-# number of trajectories to plot (this has to be a float for some reason)
-num2plot = float(T)
-## this one is for plotting
+# this one is for plotting
 mat"
 figure
 hold on
