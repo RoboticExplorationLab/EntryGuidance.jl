@@ -1,4 +1,4 @@
-function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot)
+function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
 
     mat"
     figure
@@ -20,7 +20,7 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot)
     hold off
     %saveas(gcf,'range.png')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    %matlab2tikz('bankaoa_track.tex')
+    matlab2tikz(strcat($id,'_crdr.tex'))
     %close all
     "
 
