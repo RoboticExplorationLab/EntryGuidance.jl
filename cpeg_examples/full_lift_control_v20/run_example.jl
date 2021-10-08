@@ -55,7 +55,7 @@ xf = [rf/dscale;vf/(dscale/tscale)]
 dt = (2/3600)/tscale
 N = 180
 X = NaN*[@SArray zeros(6) for i = 1:N]
-U = [[0.0;0.5] for i = 1:N-1]
+U = [[-0.05;0.55] + 0.01*randn(2) for i = 1:N-1]
 
 T = 7
 althist = [zeros(2) for i = 1:T]
@@ -63,8 +63,11 @@ drhist = [zeros(2) for i = 1:T]
 crhist = [zeros(2) for i = 1:T]
 dunorm = zeros(T)
 for i = 1:T
+
     # prediction
     X, U, t_vec, t_impact = rollout(model,deepcopy(x0),U,dt)
+
+    # pull out altitude, downrange, and crossrange paths for plotting
     althist[i], drhist[i], crhist[i] = postprocess(model,X,x0)
 
     # jacobians (linearization)
@@ -99,68 +102,9 @@ plot($dunorm)
 hold off
 "
 
-# X[1] = deepcopy(x0)
-# end_idx = NaN
-# for i = 1:(N-1)
-#     U[i] = [0.0;0.5]
-#     X[i+1] = rk4(model,X[i],U[i],dt)
-#     if altitude(model,X[i+1])<10
-#         @info "under altitude on first rollout"
-#         end_idx = i + 1
-#         U[end_idx] = [0.0;0.5]
-#         break
-#     end
-# end
-#
-# # trim
-# X = X[1:end_idx]
-# U = U[1:end_idx]
-# Uc = deepcopy(U)
-#
-# # number of simulation steps
-# T = 115
-# T_vec = [(i-1)*dt*3600 for i = 1:T]
-# Xsim = [zeros(6) for i = 1:T]
-# Xsim[1] = x0
-# Usim = [zeros(2) for i = 1:T-1]
-# althist = [zeros(2) for i = 1:T-1]
-# drhist = [zeros(2) for i = 1:T-1]
-# crhist = [zeros(2) for i = 1:T-1]
-#
-#
-# predicted_miss = zeros(T)
-# actual_miss = zeros(T)
-#
-# predicted_miss[1] = dist_from_target(X,xf)
-#
-# # main loop (CPEG runs here)
-# for i = 1:T-1
-#
-#     # prediction
-#     Xr, Ur, t_vec, t_impact = rollout(model,deepcopy(Xsim[i]),Uc[2:end],dt)
-#     actual_miss[i] = dist_from_target(Xr,xf)
-#
-#     althist[i], drhist[i], crhist[i] = postprocess(model::EntryVehicle,Xr,x0)
-#
-#     # jacobians (linearization)
-#     A,B = getAB(model,Xr,Ur,dt)
-#
-#     # correction (convex solve)
-#     Xc, Uc = eg_mpc(model,A,B,Xr,Ur,xf,i)
-#     predicted_miss[i+1] = dist_from_target(Xc,xf)
-#
-#     # actual dynamics
-#     Usim[i] = copy(Uc[1])
-#
-#     # step forward in the dynamics with the current control plan
-#     Xsim[i+1] = rk4(model::EntryVehicle,Xsim[i],Usim[i],dt)
-#
-# end
-#
-# althist_sim, drhist_sim, crhist_sim = postprocess(model,Xsim,x0)
 xf_dr, xf_cr = rangedistances(model,xf,x0)
-#
-# # number of trajectories to plot (this has to be a float for some reason)
+
+# number of trajectories to plot (this has to be a float for some reason)
 num2plot = float(T)
 ## this one is for plotting
 mat"
@@ -186,8 +130,7 @@ addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
 %matlab2tikz('bankaoa_track.tex')
 %close all
 "
-#
-#
+
 # this one is for plotting
 mat"
 figure
@@ -215,74 +158,6 @@ addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
 %matlab2tikz('bankaoa_alt.tex')
 %close all
 "
-#
-# plot both at the same time
-# mat"
-# figure
-# hold on
-# subplot(1,2,1)
-# hold on
-# rgb1 = [29 38 113]/255;
-# rgb2 = 1.3*[195 55 100]/255;
-# drgb = rgb2-rgb1;
-# for i = 1:length($drhist)
-#     px = $drhist{i};
-#     py = $crhist{i};
-#     if i < ($num2plot + 1)
-#         plot(px,py,'Color',rgb1 + drgb*(i-1)/($num2plot),'linewidth',3)
-#     end
-#     plot(px(1),py(1),'r.','markersize',20)
-# end
-# plot($xf_dr,$xf_cr,'g.','markersize',20)
-# xlabel('downrange (km)')
-# ylabel('crossrange (km)')
-# hold off
-#
-# subplot(1,2,2)
-# hold on
-# rgb1 = [29 38 113]/255;
-# rgb2 = 1.3*[195 55 100]/255;
-# drgb = rgb2-rgb1;
-# for i = 1:length($althist)
-#     px = $drhist{i};
-#     alt = $althist{i};
-#     if i < ($num2plot + 1)
-#         colo = drgb*(i-1)/($num2plot);
-#         plot(px,alt,'Color',rgb1 + colo,'linewidth',3)
-#     end
-#     plot(px(1),alt(1),'r.','markersize',20)
-# end
-# plot([0,800],ones( 2,1)*10,'r' )
-# plot($xf_dr,10,'g.','markersize',20)
-# xlim([0 650])
-# xlabel('downrange (km)')
-# ylabel('altitude (km)')
-# hold off
-# "
-#
-#
-# AoA, bank = processU(model::EntryVehicle,Xsim,Usim)
-#
-# mat"
-# figure
-# hold on
-# title('Aero Angles')
-# plot($T_vec(1:end-1)/60,rad2deg($AoA))
-# plot($T_vec(1:end-1)/60, rad2deg($bank))
-# legend('Angle of Attack (deg)' ,'Bank Angle (deg)')
-# xlabel('time (min)')
-# ylabel('Angle (deg)')
-# hold off
-# "
-#
-# mat"
-# figure
-# hold on
-# plot($actual_miss)
-# plot($predicted_miss)
-# set(gca, 'YScale', 'log')
-# hold off "
-
 
     return 0
 end

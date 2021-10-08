@@ -41,8 +41,8 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf, mpc_iteration)
     # push!(cons,norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])) <= norm( Qn*( (X[N][1:3]) - xf[1:3])  ) )
 
     γ = 10000         # miss distance penalty
-    α = 1/length(U) # regularizer
-    β = 1e-3/length(U) # control penalty
+    α = 1e-4/length(U) # regularizer
+    β = 1/length(U) # control penalty
 
 
     problem = minimize(γ*sumsquares( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) +  α*sumsquares(vec(δu)) + β*sumsquares(vec(mat_from_vec(U)) + vec(δu)), cons)
