@@ -83,7 +83,8 @@ for i = 1:T
     A,B = getAB(model,X,U,dt)
 
     # correction (convex solve)
-    Xc, U, dunorm[i] = eg_mpc2(model,A,B,X,U,xf)
+    # Xc, U, dunorm[i] = eg_mpc2(model,A,B,X,U,xf)
+    Xc, U, dunorm[i] = eg_mpc_l1(model,A,B,X,U,xf)
 
 end
 
