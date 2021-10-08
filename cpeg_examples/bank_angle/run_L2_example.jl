@@ -99,7 +99,7 @@ hold off
 l2_traj = (T_vec = T_vec, bank = bank,
            alt = althist[end], dr = drhist[end],cr = crhist[end])
 
-jldsave("cpeg_examples/bank_angle/L2_bank.jld2";l2_traj)
+jldsave("cpeg_examples/bank_angle/trajectories/L2_bank.jld2";l2_traj)
 
 #
 mat"

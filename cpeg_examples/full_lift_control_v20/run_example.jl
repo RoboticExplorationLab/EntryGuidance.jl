@@ -55,7 +55,7 @@ xf = [rf/dscale;vf/(dscale/tscale)]
 dt = (2/3600)/tscale
 N = 180
 X = NaN*[@SArray zeros(6) for i = 1:N]
-U = [[-0.05;0.55] + 0.01*randn(2) for i = 1:N-1]
+U = [[-0.05;0.55] + 0.00*randn(2) for i = 1:N-1]
 
 # number of iterations
 T = 7
