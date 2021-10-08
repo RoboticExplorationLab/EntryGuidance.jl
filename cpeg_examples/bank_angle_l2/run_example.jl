@@ -8,6 +8,7 @@ using Infiltrator
 using ForwardDiff
 using Convex
 using Mosek, MosekTools
+using Random
 # using COSMO
 using SuiteSparse
 using SparseArrays
@@ -27,6 +28,7 @@ function dist_from_target(X,xf)
 end
 
 function first_test()
+Random.seed!(123)
 
 dscale = 1.0e3
 tscale = 1.0
@@ -41,10 +43,7 @@ V0 = 5.845*3600 #Mars-relative velocity at interface of 5.845 km/sec
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
 σ0 = deg2rad(3)
 x0 = [r0;v0;σ0]
-# x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0,σ0]
-# r0 = x0[1:3]; v0 = x0[4:6];
-# @infiltrate
-# error()
+
 #Final conditions for MSL 631.979 km down range and 7.869 km cross-range from entry point
 Rf = Rm+10.0 #Parachute opens at 10 km altitude
 rf = Rf*[cos(7.869/Rf)*cos(631.979/Rf); cos(7.869/Rf)*sin(631.979/Rf); sin(7.869/Rf)]
@@ -59,7 +58,7 @@ xf = [rf/dscale;vf/(dscale/tscale); σ0]
 dt = (2/3600)/tscale
 N = 180
 X = NaN*[@SArray zeros(7) for i = 1:N]
-U = [[0.001*randn()]  for i = 1:N-1]
+U = [[0.000*randn()]  for i = 1:N-1]
 
 # number of iterations
 T = 25
@@ -70,7 +69,6 @@ drhist = [zeros(2) for i = 1:T]
 crhist = [zeros(2) for i = 1:T]
 dunorm = zeros(T)
 
-# X, U = rollout(model,deepcopy(x0),U,dt)
 
 # main loop
 for i = 1:T
@@ -85,13 +83,10 @@ for i = 1:T
     A,B = getAB(model,X,U,dt)
 
     # correction (convex solve)
-    Xc, U, dunorm[i] = eg_mpc(model,A,B,X,U,xf)
+    Xc, U, dunorm[i] = eg_mpc2(model,A,B,X,U,xf)
 
 end
 
-# @infiltrate
-# error()
-#
 # AoA, bank = processU(model::EntryVehicle,X,U)
 N = length(X)
 T_vec = 0:(dt*3600):((N-1)*(dt*3600))
@@ -99,7 +94,7 @@ xf_dr, xf_cr = rangedistances(model,xf,x0)
 
 bank = [X[i][7] for i = 1:(length(X)-1)]
 
-#
+
 # # number of trajectories to plot (this has to be a float for some reason)
 num2plot = float(T)
 mat"

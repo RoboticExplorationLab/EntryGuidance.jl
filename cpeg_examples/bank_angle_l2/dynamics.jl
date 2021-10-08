@@ -51,7 +51,7 @@ function evdynamics(model::EntryVehicle, x, u)
     v = v/(dscale/tscale)
     v̇ = v̇/(dscale/tscale^2)
 
-    return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3],u[1]]
+    return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3],u[1]*1000]
 end
 
 function rk4(model,x_n,u,dt)
