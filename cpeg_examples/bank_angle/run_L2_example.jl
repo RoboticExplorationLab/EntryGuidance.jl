@@ -48,7 +48,7 @@ x0 = [r0/dscale;v0/(dscale/tscale); σ0]
 xf = [rf/dscale;vf/(dscale/tscale); σ0]
 
 # initial control
-dt = (5/3600)/tscale
+dt = (2/3600)/tscale
 N = 180
 X = NaN*[@SArray zeros(7) for i = 1:N]
 U = [[0.00*randn()]  for i = 1:N-1]

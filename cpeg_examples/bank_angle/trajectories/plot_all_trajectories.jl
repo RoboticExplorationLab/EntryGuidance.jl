@@ -13,7 +13,7 @@ althist = [l1_traj.alt, l2_traj.alt, fl_traj.alt]
 xf_dr = l1_traj.xf_dr
 xf_cr = l1_traj.xf_cr
 
-@show norm(l1_traj.dr - l2_traj.dr)
+# @show norm(l1_traj.dr - l2_traj.dr)
 mat"
 figure
 hold on

@@ -17,6 +17,8 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
     plot($xf_dr,$xf_cr,'g.','markersize',20)
     xlabel('downrange (km)')
     ylabel('crossrange (km)')
+    xlim([250,700])
+    ylim([0,20])
     hold off
     fleg = legend('figure()');
     set(fleg,'visible','off')
@@ -43,7 +45,8 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
     end
     plot([0,800],ones( 2,1)*10,'r' )
     plot($xf_dr,10,'g.','markersize',20)
-    xlim([0 650])
+    xlim([400,700])
+    ylim([8,30])
     xlabel('downrange (km)')
     ylabel('altitude (km)')
     hold off
