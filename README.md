@@ -7,7 +7,7 @@ This repository accompanies the following paper, [CPEG: A Predictor-corrector En
 <!-- The examples from the paper can be run in the following manner: -->
 ### Running the examples from the paper
 
-1. Start Julia (1.6.2)
+1. Download and start Julia https://julialang.org/downloads/ (1.6.3)
 2. Navigate to the `EntryGuidance.jl` directory. 
 3. run `using Pkg; Pkg.activate("."); Pkg.instantiate();`
 
