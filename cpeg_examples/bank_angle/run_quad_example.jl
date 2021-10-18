@@ -75,9 +75,7 @@ for i = 1:T
     A,B = getAB(model,X,U,dt)
 
     # correction (convex solve)
-    Xc, U, dunorm[i] = eg_mpc2(model,A,B,X,U,xf)
-    # Xc, U, dunorm[i] = eg_mpc_l1(model,A,B,X,U,xf)
-
+    Xc, U, dunorm[i] = eg_mpc_quad(model,A,B,X,U,xf)
 end
 
 # post process data for plotting
@@ -89,7 +87,7 @@ bank = [X[i][7] for i = 1:(length(X)-1)]
 mat"
 figure
 hold on
-%title('Bank Angle')
+title('Bank Angle (debugging)')
 plot($T_vec(1:end-1)/60, rad2deg($bank),'linewidth',3)
 ylabel('Bank Angle (deg)')
 xlabel('time (min)')
@@ -99,20 +97,20 @@ hold off
 l2_traj = (T_vec = T_vec, bank = bank,
            alt = althist[end], dr = drhist[end],cr = crhist[end])
 
-jldsave("cpeg_examples/bank_angle/trajectories/L2_bank.jld2";l2_traj)
+# jldsave("cpeg_examples/bank_angle/trajectories/L2_bank.jld2";l2_traj)
 
 #
 mat"
 figure
 hold on
-title('Du norm')
+title('Du norm (debugging)')
 plot($dunorm)
 hold off
 "
 
 # number of trajectories to plot (this has to be a float for some reason)
 num2plot = 4.0#float(T)
-plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,"L2")
+plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,"quad")
 
     return 0
 end

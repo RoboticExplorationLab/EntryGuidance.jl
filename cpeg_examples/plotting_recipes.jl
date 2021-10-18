@@ -64,7 +64,7 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
     fleg = legend('figure()');
     set(fleg,'visible','off')
     addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
-    matlab2tikz(strcat('cpeg_examples/bank_angle/tikz/',$id,'_altdr.tex'))
+    %matlab2tikz(strcat('cpeg_examples/bank_angle/tikz/',$id,'_altdr.tex'))
     %matlab2tikz('bankaoa_alt.tex')
     %close all
     "
