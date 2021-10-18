@@ -12,7 +12,7 @@ using Random
 using SuiteSparse
 using SparseArrays
 using JLD2
-
+using OSQP
 include(joinpath(@__DIR__,"dynamics.jl"))
 include(joinpath(@__DIR__,"rollout_stuff.jl"))
 include(joinpath(@__DIR__,"mpc.jl"))
@@ -111,7 +111,7 @@ hold off
 "
 
 # number of trajectories to plot (this has to be a float for some reason)
-num2plot = 6.0#float(T)
+num2plot = 4.0#float(T)
 plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,"L2")
 
     return 0
