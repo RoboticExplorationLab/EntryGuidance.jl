@@ -1,5 +1,4 @@
 using Convex, Mosek, MosekTools
-# using JuMP
 
 
 function eg_mpc(model::EntryVehicle,A,B,X,U,xf, mpc_iteration)
@@ -31,14 +30,8 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf, mpc_iteration)
         push!(cons, norm(U[i] + δu[:,i]) <= 1.0)
     end
 
-
-
     rr = normalize(xf[1:3])
     Qn = I - rr*rr'
-
-    # trust region
-    # push!(cons, norm( Qn*δx[1:3,N]) <= 5)
-    # push!(cons,norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])) <= norm( Qn*( (X[N][1:3]) - xf[1:3])  ) )
 
     γ = 10000         # miss distance penalty
     α = 1e-6/length(U) # regularizer
@@ -47,12 +40,10 @@ function eg_mpc(model::EntryVehicle,A,B,X,U,xf, mpc_iteration)
 
     problem = minimize(γ*sumsquares( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) +  α*sumsquares(vec(δu)) + β*sumsquares(vec(mat_from_vec(U)) + vec(δu)), cons)
 
-
-    # problem = minimize( norm( Qn*( (X[N][1:3] + δx[1:3,N]) - xf[1:3])  ) , cons)
+    # solve with Mosek
     Convex.solve!(problem, () -> Mosek.Optimizer())
 
-
-
+    # recover solutions
     cX = vec_from_mat(mat_from_vec(X) + evaluate(δx))
     cU = vec_from_mat(mat_from_vec(U) + evaluate(δu))
 
