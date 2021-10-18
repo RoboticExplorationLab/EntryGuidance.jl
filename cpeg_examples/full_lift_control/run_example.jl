@@ -89,13 +89,28 @@ N = length(X)
 T_vec = 0:(dt*3600):((N-1)*(dt*3600))
 xf_dr, xf_cr = rangedistances(model,xf,x0)
 
+
 # number of trajectories to plot (this has to be a float for some reason)
 num2plot = float(T)
 fl_traj = (T_vec = T_vec, bank = bank, AoA = AoA,
            alt = althist[end], dr = drhist[end],cr = crhist[end])
 
-jldsave("cpeg_examples/bank_angle/trajectories/full_lift.jld2";fl_traj)
+# jldsave("cpeg_examples/bank_angle/trajectories/full_lift.jld2";fl_traj)
+flb = fl_traj.bank
+fla = fl_traj.AoA
+flt = fl_traj.T_vec
 
+mat"
+figure
+hold on
+plot($flt(1:end-1)/60, rad2deg($flb),'linewidth',3)
+plot($flt(1:end-1)/60, rad2deg($fla),'linewidth',3)
+legend('bank angle','angle of attack','location','northwest')
+ylabel('aero angle (deg)')
+xlabel('time (min)')
+%addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+%matlab2tikz(strcat('cpeg_examples/bank_angle/tikz/fl_controls.tex'))
+"
 
 # number of trajectories to plot (this has to be a float for some reason)
 num2plot = 4.0#float(T)

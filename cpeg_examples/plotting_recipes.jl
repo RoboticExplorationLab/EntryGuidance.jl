@@ -11,7 +11,7 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
         px = $drhist{i};
         py = $crhist{i};
         plot(px,py,'Color',rgb1 + drgb*(i)/($num2plot),'linewidth',3)
-        cmap = [cmap;rgb1 + drgb*(i)/($num2plot)]
+        cmap = [cmap;rgb1 + drgb*(i)/($num2plot)];
         %plot(px(1),py(1),'r.','markersize',20)
     end
     plot($xf_dr,$xf_cr,'g.','markersize',20)
@@ -23,11 +23,11 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
     xlabel('downrange (km)')
     ylabel('crossrange (km)')
     xlim([250,700])
-    ylim([0,20])
+    %ylim([0,20])
     hold off
     fleg = legend('figure()');
     set(fleg,'visible','off')
-    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    %addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
     %matlab2tikz(strcat('cpeg_examples/bank_angle/tikz/',$id,'_crdr.tex'))
     %close all
     "
@@ -44,7 +44,7 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
         px = $drhist{i};
         alt = $althist{i};
         plot(px,alt,'Color',rgb1 + drgb*(i)/($num2plot),'linewidth',3)
-        cmap = [cmap;rgb1 + drgb*(i)/($num2plot)]
+        cmap = [cmap;rgb1 + drgb*(i)/($num2plot)];
     end
     plot($xf_dr,$xf_cr,'g.','markersize',20)
     colormap(cmap);
@@ -60,10 +60,9 @@ function plot_groundtracks(drhist,crhist,althist,xf_dr,xf_cr,num2plot,id)
     ylabel('altitude (km)')
     hold off
     %saveas(gcf,'alt.png')
-    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
     fleg = legend('figure()');
     set(fleg,'visible','off')
-    addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
+    %addpath('/Users/kevintracy/devel/WiggleSat/matlab2tikz-master/src')
     %matlab2tikz(strcat('cpeg_examples/bank_angle/tikz/',$id,'_altdr.tex'))
     %matlab2tikz('bankaoa_alt.tex')
     %close all

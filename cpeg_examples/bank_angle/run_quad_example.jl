@@ -87,7 +87,7 @@ bank = [X[i][7] for i = 1:(length(X)-1)]
 mat"
 figure
 hold on
-title('Bank Angle (debugging)')
+title('Bank Angle')
 plot($T_vec(1:end-1)/60, rad2deg($bank),'linewidth',3)
 ylabel('Bank Angle (deg)')
 xlabel('time (min)')
@@ -100,13 +100,13 @@ l2_traj = (T_vec = T_vec, bank = bank,
 # jldsave("cpeg_examples/bank_angle/trajectories/L2_bank.jld2";l2_traj)
 
 #
-mat"
-figure
-hold on
-title('Du norm (debugging)')
-plot($dunorm)
-hold off
-"
+# mat"
+# figure
+# hold on
+# title('Du norm (debugging)')
+# plot($dunorm)
+# hold off
+# "
 
 # number of trajectories to plot (this has to be a float for some reason)
 num2plot = 4.0#float(T)
