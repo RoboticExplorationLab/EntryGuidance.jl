@@ -187,7 +187,23 @@ function solveqp!(qp::QP)
 
         # update linear system for solves
         update_kkt!(qp)
-        kkt_factor = qdldl(qp.KKT)
+        # kkt_factor = qdldl(qp.KKT)
+        # AA = qp.KKT;
+
+        # if i == 1
+        #     mat"
+        #     spy($AA)
+        #     "
+        #     cc = [sum(abs.(AA[:,i])) for i = 1:size(AA,2)]
+        #     mat"
+        #     figure
+        #     hold on
+        #     plot($cc)
+        #     hold off
+        #     "
+        #     @infiltrate
+        # end
+        kkt_factor = lu(qp.KKT)
 
         # affine step
         rhs_kkt_a!(qp)

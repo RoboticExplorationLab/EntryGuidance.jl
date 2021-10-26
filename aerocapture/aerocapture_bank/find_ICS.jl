@@ -77,7 +77,7 @@ for i = 1:T
 
     # solve cvx prob (correct)
     # U = eg_mpc(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
-    U = eg_mpc_quad(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
+    U = eg_mpc_pdip(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
 
 end
 t_vec = (0:(length(X)-1))*dt*3600
