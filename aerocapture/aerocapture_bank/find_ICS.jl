@@ -8,10 +8,10 @@ using Infiltrator
 using ForwardDiff
 using Convex
 using Mosek, MosekTools
-using COSMO
+# using COSMO
 using SuiteSparse
 using SparseArrays
-using Interpolations
+# using Interpolations
 
 
 include(joinpath(@__DIR__,"dynamics.jl"))
@@ -27,7 +27,10 @@ alt0= 145.0
 V0 = 12.845*3600
 
 # evmodel = CartesianMSLModel()
-model = EntryVehicle(CartesianMSLModel(),1.0)
+dscale = 1.0e3
+tscale = 1.0
+uscale = 1.0
+model = EntryVehicle(CartesianMSLModel(),dscale,tscale,uscale)
 #Initial conditions for MSL
 Rm = model.evmodel.planet.R
 r0 = [Rm+alt0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
@@ -38,11 +41,13 @@ r0 = [Rm+alt0, 0.0, 0.0] #Atmospheric interface at 125 km altitude
 v0 = V0*[sin(γ0), cos(γ0), 0.0]
 epsilon0 = epsilon(model,[r0;v0])
 σ0 = deg2rad(30)
-x0 = [r0;v0;σ0;epsilon0]
+# x0 = [r0;v0;σ0;epsilon0]
+x0 = [r0/dscale;v0/(dscale/tscale); σ0; epsilon0]
+
 # x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0]
 
 # first rollout
-dt = 2/3600
+dt = 2/3600/tscale
 N = 100
 X = NaN*[@SArray zeros(8) for i = 1:N]
 U = [@SArray zeros(1) for i = 1:N-1]
@@ -71,7 +76,8 @@ for i = 1:T
     A,B = getAB(model,X,U,dt)
 
     # solve cvx prob (correct)
-    U = eg_mpc(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
+    # U = eg_mpc(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
+    U = eg_mpc_quad(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
 
 end
 t_vec = (0:(length(X)-1))*dt*3600
@@ -88,7 +94,7 @@ plot(0:($T-1),$pme,'linewidth',4)
 set(gca, 'YScale', 'log')
 xlabel('Predictor-corrector iteration number')
 ylabel('Terminal specific energy error')
-set(gca,'FontSize',15)
+%set(gca,'FontSize',15)
 hold off
 "
 
@@ -114,7 +120,7 @@ hold on
 plot($t_vec, rad2deg($Xm(7,:)),'linewidth',4)
 xlabel('Time (s)')
 ylabel('Bank Angle (degrees)')
-set(gca,'FontSize',15)
+%set(gca,'FontSize',15)
 hold off
 "
 
@@ -127,7 +133,7 @@ title('Altitude')
 plot($t_vec, $alt,'linewidth',4)
 xlabel('Time (s)')
 ylabel('Altitude (km)')
-set(gca,'FontSize',15)
+%set(gca,'FontSize',15)
 hold off
 "
 

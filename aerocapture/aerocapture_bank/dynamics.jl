@@ -1,11 +1,16 @@
 struct EntryVehicle{T}
     evmodel::EG.CartesianModel{T}
+    dscale::Float64
+    tscale::Float64
     uscale::Float64
 end
 function evdynamics(model::EntryVehicle, x, u)
 
-    r = x[SA[1,2,3]]
-    v = x[SA[4,5,6]]
+    # unpack scaling
+    dscale, tscale, uscale = model.dscale, model.tscale, model.uscale
+
+    r = x[SA[1,2,3]]*dscale
+    v = x[SA[4,5,6]]*(dscale/tscale)
     σ = x[7]
     α = deg2rad(15)
     # σ̇ = u
@@ -40,7 +45,7 @@ function evdynamics(model::EntryVehicle, x, u)
                       # this is rotating planet effects
     v̇ = D_a + L_a + g - 2*Ω̂*v - Ω̂*Ω̂*r
 
-    # return [v; v̇]
+    # epsilon dot stuff
     mu =  model.evmodel.planet.gravity.μ
     vx, vy, vz = v
     rx, ry, rz = r
@@ -48,7 +53,12 @@ function evdynamics(model::EntryVehicle, x, u)
     epsilon_dot = dvx*vx + dvy*vy + dvz*vz + (vx*mu*rx)/(rx^2 + ry^2 + rz^2)^(3/2) + (vy*mu*ry)/(rx^2 + ry^2 + rz^2)^(3/2) + (vz*mu*rz)/(rx^2 + ry^2 + rz^2)^(3/2)
     epsilon_dot /= 1e8
 
-    return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3],u[1],epsilon_dot]
+    # rescale units
+    v = v/(dscale/tscale)
+    v̇ = v̇/(dscale/tscale^2)
+
+    return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3],u[1]*1000, epsilon_dot]
+    # return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3],u[1],epsilon_dot]
 end
 
 function rk4(model,x_n,u,dt)
