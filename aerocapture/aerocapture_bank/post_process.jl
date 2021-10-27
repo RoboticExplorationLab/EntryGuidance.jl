@@ -13,7 +13,10 @@ function epsilon(model::EntryVehicle,x)
     μ = model.evmodel.planet.gravity.μ
     r = x[1:3]
     v = x[4:6]
-    return (dot(v,v)/2 - μ/norm(r))/1e8
+    Ω = model.evmodel.planet.Ω #Set Ω = 0.0 here if you want that behavior
+    Ω̂ = hat([0, 0, Ω])
+    vi = v + Ω̂*r
+    return (dot(vi,vi)/2 - μ/norm(r))/1e8
 end
 
 function peri_apo(model::EntryVehicle,x)
