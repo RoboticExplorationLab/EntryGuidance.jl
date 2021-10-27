@@ -47,8 +47,8 @@ x0 = [r0/dscale;v0/(dscale/tscale); σ0; epsilon0]
 # x0 = [3443.300786841311, 270.4345771068569, 0.0, -6051.64651501579, 20222.23824790719, 0.0]
 
 # first rollout
-dt = 2/3600/tscale
-N = 100
+dt = 4/3600/tscale
+N = 50
 X = NaN*[@SArray zeros(8) for i = 1:N]
 U = [@SArray zeros(1) for i = 1:N-1]
 
