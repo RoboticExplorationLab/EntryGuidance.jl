@@ -187,34 +187,22 @@ function solveqp!(qp::QP)
 
         # update linear system for solves
         update_kkt!(qp)
-        # kkt_factor = qdldl(qp.KKT)
-        # AA = qp.KKT;
-
-        # if i == 1
-        #     mat"
-        #     spy($AA)
-        #     "
-        #     cc = [sum(abs.(AA[:,i])) for i = 1:size(AA,2)]
-        #     mat"
-        #     figure
-        #     hold on
-        #     plot($cc)
-        #     hold off
-        #     "
-        #     @infiltrate
-        # end
+        # kkt_factor = qdldl(qp.KKT +
+                          # 1e-10*Diagonal([ones(qp.idx.nx + qp.idx.ns);-ones(qp.idx.nz + qp.idx.ny)]))
         kkt_factor = lu(qp.KKT)
 
         # affine step
         rhs_kkt_a!(qp)
 
         qp.p_a .= kkt_factor\qp.rhs_a
+        # qp.p_a .= iterative_ref(kkt_factor,qp.KKT,qp.rhs_a)
         index_sol_a!(qp)
 
         # centering and correcting step
         σ, μ = centering_params(qp)
         rhs_kkt_c!(qp, σ, μ)
         qp.p_c .= kkt_factor\qp.rhs_c
+        # qp.p_c .= iterative_ref(kkt_factor,qp.KKT,qp.rhs_c)
         index_sol_c!(qp)
 
         # combine deltas

@@ -200,7 +200,7 @@ function eg_mpc_pdip(model::EntryVehicle,A,B,X,U,ϵ_f)
     # q[idx_x[N][1:3]] = -(Qn'*Qn)'*(xf[1:3] - X[N][1:3])
 
     # solve using OSQP
-    Q = copy(P)
+    Q = copy(P) #+ 1e-6*I
     q = copy(q)
     A = copy(A_eq)
     b = copy(up_eq)
@@ -223,5 +223,5 @@ function eg_mpc_pdip(model::EntryVehicle,A,B,X,U,ϵ_f)
     cX = X + δx
     cU = U + δu
 
-    return cU
+    return cU, norm(δu)
 end

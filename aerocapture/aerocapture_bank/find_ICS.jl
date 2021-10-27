@@ -66,7 +66,7 @@ end
 ϵ_f = -0.4
 
 T = 10
-eps_hist = zeros(T)
+eps_hist = NaN*zeros(T)
 for i = 1:T
 
     X = rollout(model,x0,U,dt)
@@ -77,7 +77,11 @@ for i = 1:T
 
     # solve cvx prob (correct)
     # U = eg_mpc(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
-    U = eg_mpc_pdip(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
+    U,normdu = eg_mpc_pdip(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
+
+    if normdu < 1e-4
+        break
+    end
 
 end
 t_vec = (0:(length(X)-1))*dt*3600
@@ -124,7 +128,7 @@ ylabel('Bank Angle (degrees)')
 hold off
 "
 
-alt = [norm(X[i][1:3])-model.evmodel.planet.R for i = 1:length(X)]
+alt = [norm(X[i][1:3])*1e3-model.evmodel.planet.R for i = 1:length(X)]
 
 mat"
 figure
