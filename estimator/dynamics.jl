@@ -4,9 +4,10 @@ struct EntryVehicle{T}
     tscale::Float64
     uscale::Float64
 end
-function my_atmo(model,x,H,ρ0)
+function my_atmo(model,x,H)
     r = norm(x[1:3])
     r0 =3396.2
+    ρ0 = 5.25
     # H =11.1
     # ρ0 *= 1e7
     ρ = ρ0*exp(-(r-r0)/H)*1e7
@@ -21,13 +22,13 @@ function evdynamics(model::EntryVehicle, x, u)
     v = x[SA[4,5,6]]*(dscale/tscale)
     σ = x[7]
     H = x[8]
-    ρ0 = x[9]
+    # ρ0 = x[9]
     α = deg2rad(15)
     # σ̇ = u
     #atmospheric density
     # ρ2 = atmospheric_density(r, model.evmodel)
     # ρ = atmospheric_density(r,model.exp_at)
-    ρ = my_atmo(model, r, H, ρ0)
+    ρ = my_atmo(model, r, H)
 
     # @show (ρ - ρ2)/ρ2
     # @show ρ2
@@ -72,7 +73,7 @@ function evdynamics(model::EntryVehicle, x, u)
     v = v/(dscale/tscale)
     v̇ = v̇/(dscale/tscale^2)
 
-    return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3],u[1]*1000,0,0]
+    return SA[v[1],v[2],v[3],v̇[1],v̇[2],v̇[3],u[1]*1000,0]
 end
 
 function rk4(model,x_n,u,dt)
