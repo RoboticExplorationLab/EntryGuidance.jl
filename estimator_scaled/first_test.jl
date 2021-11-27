@@ -62,7 +62,7 @@ F = [zeros(8,8) for i = 1:N]
 Σ = (0.001*Matrix(float(I(8))))
 Σ[8,8] = 0.2
 F[1] = chol(Matrix(Σ))
-
+#t
 Q = 1e-20*Matrix(I(8))
 # Q = diagm( [(.00005)^2*ones(3)/dscale; .00005^2*ones(3)/(dscale/tscale); (1e-5)^2;(1e-5)^2])
 # R = 1e-10*Matrix(I(6))
