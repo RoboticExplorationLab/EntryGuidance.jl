@@ -60,21 +60,21 @@ X[1] = deepcopy(x0)
 μ[1][8] = μ[1][8] + 0.1*randn()
 F = [zeros(8,8) for i = 1:N]
 Σ = (0.001*Matrix(float(I(8))))
-Σ[8,8] = 0.2
+Σ[8,8] = (1)^2
 F[1] = chol(Matrix(Σ))
 #t
 Q = 1e-20*Matrix(I(8))
 # Q = diagm( [(.00005)^2*ones(3)/dscale; .00005^2*ones(3)/(dscale/tscale); (1e-5)^2;(1e-5)^2])
 # R = 1e-10*Matrix(I(6))
-R = diagm( [(.01)^2*ones(3)/dscale; (0.0002)^2*ones(3)/(dscale/tscale)])
+R = diagm( [(.001)^2*ones(3)/dscale; (0.2)^2*ones(3)/(dscale/tscale)])
 
 # @show diag(Q)
-# @show diag(R)
+@show diag(R)
 kf_sys = (dt = dt, ΓR = chol(R), ΓQ = chol(Q))
 
 end_idx = NaN
 for i = 1:(N-1)
-    U[i] = [0]
+    U[i] = [sin(i/10)/30]
     X[i+1] = rk4(model,X[i],U[i],dt)
     Y[i+1] = measurement(model,X[i+1]) + kf_sys.ΓR*randn(6)
 
@@ -83,6 +83,12 @@ end
 
 Xm = mat_from_vec(X)
 
+mat"
+figure
+hold on
+plot($Xm(7,:))
+hold off
+"
 alt, dr, cr = postprocess(model::EntryVehicle,X,x0)
 
 alt_k, dr_k, cr_k = postprocess(model::EntryVehicle,μ,x0)
