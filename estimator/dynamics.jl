@@ -7,10 +7,10 @@ end
 function my_atmo(model,x,H)
     r = norm(x[1:3])
     r0 =3396.2
-    ρ0 = 5.25
+    ρ0 = 5.25*1e7
     # H =11.1
     # ρ0 *= 1e7
-    ρ = ρ0*exp(-(r-r0)/H)*1e7
+    ρ = ρ0*exp(-(r-r0)/H)
     return ρ
 end
 function evdynamics(model::EntryVehicle, x, u)
