@@ -64,9 +64,10 @@ F = [zeros(8,8) for i = 1:N]
 F[1] = chol(Matrix(Σ))
 #t
 Q = 1e-20*Matrix(I(8))
+# Q[8,8] = 1e-10
 # Q = diagm( [(.00005)^2*ones(3)/dscale; .00005^2*ones(3)/(dscale/tscale); (1e-5)^2;(1e-5)^2])
 # R = 1e-10*Matrix(I(6))
-R = diagm( [(.1)^2*ones(3)/dscale; (0.002)^2*ones(3)/(dscale/tscale)])
+R = diagm( [(.1)^2*ones(3)/dscale; (0.0002)^2*ones(3)/(dscale/tscale)])
 
 # @show diag(Q)
 @show diag(R)
