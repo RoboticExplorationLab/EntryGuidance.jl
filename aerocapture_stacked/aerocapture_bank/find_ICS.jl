@@ -66,7 +66,7 @@ end
 # -0.4 is the goal epsilon
 ϵ_f = -0.4
 
-T = 10
+T = 20
 eps_hist = [zeros(3) for i = 1:T]
 for i = 1:T
 
@@ -117,10 +117,17 @@ t_vec = (0:(length(X)-1))*dt*3600
 # "
 
 Xm = mat_from_vec(X)
+X1m = Xm[1:8,:]
+X2m = Xm[9:16,:]
+X3m = Xm[17:24,:]
+
+X1 = vec_from_mat(X1m)
+X2 = vec_from_mat(X2m)
+X3 = vec_from_mat(X3m)
 mat"
 figure
 hold on
-%title('Bank Angle')
+title('Bank Angle')
 
 plot($t_vec, rad2deg($Xm(7,:)),'linewidth',4)
 xlabel('Time (s)')
@@ -129,16 +136,36 @@ ylabel('Bank Angle (degrees)')
 hold off
 "
 
-alt = [norm(X[i][1:3])*1e3-model.evmodel.planet.R for i = 1:length(X)]
+alt1 = [norm(X1[i][1:3])*1e3-model.evmodel.planet.R for i = 1:length(X)]
+alt2 = [norm(X2[i][1:3])*1e3-model.evmodel.planet.R for i = 1:length(X)]
+alt3 = [norm(X3[i][1:3])*1e3-model.evmodel.planet.R for i = 1:length(X)]
 
 mat"
 figure
 hold on
 title('Altitude')
-plot($t_vec, $alt,'linewidth',4)
+plot($t_vec, $alt1)
+plot($t_vec, $alt2)
+plot($t_vec, $alt3)
+legend('1','2','3')
 xlabel('Time (s)')
 ylabel('Altitude (km)')
 %set(gca,'FontSize',15)
+hold off
+"
+
+ϵ1 = X1m[8,:]
+ϵ2 = X2m[8,:]
+ϵ3 = X3m[8,:]
+
+mat"
+figure
+hold on
+title('epsilon')
+plot($t_vec,$ϵ1)
+plot($t_vec,$ϵ2)
+plot($t_vec,$ϵ3)
+plot($t_vec,$ϵ_f*ones(length($t_vec),1),'r--')
 hold off
 "
 
