@@ -1,8 +1,9 @@
 using LinearAlgebra, SparseArrays
 # using Infiltrator
 # using QDLDL, ECOS, Convex
-using Convex, Mosek, MosekTools, Printf
-using QDLDL
+# using Convex, Mosek, MosekTools, Printf
+using Printf
+# using QDLDL
 
 struct IDX
     # contains the variable indexing stuff for [x;s;z;y]
