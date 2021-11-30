@@ -218,7 +218,9 @@ function solveqp!(qp::QP)
             break
         end
     end
-
+    if dot(qp.s,qp.z) > 1e-8
+        error("PDIP FAILED")
+    end
     return nothing
 end
 
@@ -230,9 +232,9 @@ function logging(qp::QP,iter,α)
     ineq_res = norm(qp.G*qp.x + qp.s - qp.h)
 
 
-    @printf("%3d   %10.3e  %9.2e  %9.2e  %9.2e  % 6.4f\n",
-          iter, J, gap, eq_res,
-          ineq_res, α)
+    # @printf("%3d   %10.3e  %9.2e  %9.2e  %9.2e  % 6.4f\n",
+    #       iter, J, gap, eq_res,
+    #       ineq_res, α)
 
     return (gap<1e-8)
 end

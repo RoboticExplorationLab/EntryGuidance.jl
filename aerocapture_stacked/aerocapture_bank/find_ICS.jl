@@ -49,7 +49,7 @@ x0 = [x0;x0;x0]
 
 # first rollout
 dt = 4/3600/tscale
-N = 50
+N = 70
 X = NaN*[@SArray zeros(8*3) for i = 1:N]
 U = [@SArray zeros(1) for i = 1:N-1]
 
@@ -79,8 +79,9 @@ for i = 1:T
     # solve cvx prob (correct)
     # U = eg_mpc(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
     U,normdu = eg_mpc_pdip(model,A,B,deepcopy(X),deepcopy(U),ϵ_f)
-
+    @show normdu
     if normdu < 1e-4
+        @info "CPAG converged"
         break
     end
 

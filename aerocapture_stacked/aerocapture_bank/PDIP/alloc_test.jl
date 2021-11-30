@@ -1,139 +1,8 @@
 using LinearAlgebra
 using SparseArrays
+using BenchmarkTools
+using SuiteSparse
 
-function rhs_kkt_a!(qp::QP)
-    idx = qp.idx
-    c = qp.cache
-
-    # qp.rhs_a[idx.x] = -(qp.A'*qp.y + qp.G'*qp.z + qp.Q*qp.x + qp.q)
-    mul!(c.x.c1,qp.A',qp.y)
-    mul!(c.x.c2,qp.G',qp.z)
-    mul!(c.x.c3,qp.Q,qp.x)
-    @. qp.rhs_a[idx.x] = -c.x.c1 - c.x.c2 - c.x.c3 - qp.q
-
-    # qp.rhs_a[idx.s] = -(qp.z)
-    @. qp.rhs_a[idx.s] = -qp.z
-
-    # qp.rhs_a[idx.z] = -(qp.G*qp.x + qp.s - qp.h)
-    mul!(c.z.c1,qp.G,qp.x)
-    @. qp.rhs_a[idx.z] = -c.z.c1 - qp.s - qp.h
-
-    # qp.rhs_a[idx.y] = -(qp.A*qp.x - qp.b)
-    mul!(c.y.c1,qp.A,qp.x)
-    @. qp.rhs_a[idx.y] = -c.y.c1 + qp.b
-    return nothing
-end
-function index_sol_a!(qp::QP)
-    # qp.Δ.x_a .= qp.p_a[qp.idx.x]
-    qp.Δ.x_a .= view(qp.p_a,qp.idx.x)
-
-    # qp.Δ.s_a .= qp.p_a[qp.idx.s]
-    qp.Δ.s_a .= view(qp.p_a,qp.idx.s)
-
-    # qp.Δ.z_a .= qp.p_a[qp.idx.z]
-    qp.Δ.z_a .= view(qp.p_a,qp.idx.z)
-
-    # qp.Δ.y_a .= qp.p_a[qp.idx.y]
-    qp.Δ.y_a .= view(qp.p_a,qp.idx.y)
-    return nothing
-end
-function index_sol_c!(qp::QP)
-    qp.Δ.x_c .= view(qp.p_c,qp.idx.x)
-    qp.Δ.s_c .= view(qp.p_c,qp.idx.s)
-    qp.Δ.z_c .= view(qp.p_c,qp.idx.z)
-    qp.Δ.y_c .= view(qp.p_c,qp.idx.y)
-    return nothing
-end
-function linesearch(x,dx)
-    # α = min(1.0, minimum([dx[i]<0 ? -x[i]/dx[i] : Inf for i = 1:length(x)]))
-    α = 1.0
-    for i = 1:length(x)
-        if dx[i]<0
-            α = min(α,-x[i]/dx[i])
-        end
-    end
-    return α
-end
-
-function centering_params(qp::QP)
-
-    μ = dot(qp.s,qp.z)/qp.idx.ns
-
-    α = min(linesearch(qp.s,qp.Δ.s_a), linesearch(qp.z,qp.Δ.z_a))
-
-    # σ = (dot(qp.s + α*qp.Δ.s_a, qp.z + α*qp.Δ.z_a)/dot(qp.s,qp.z))^3
-    @. qp.cache.z.c1 = qp.s + α*qp.Δ.s_a
-    @. qp.cache.z.c2 = qp.z + α*qp.Δ.z_a
-    σ = (dot(qp.cache.z.c1,qp.cache.z.c2)/dot(qp.s,qp.z))^3
-
-    return σ, μ
-end
-
-function rhs_kkt_c!(qp::QP, σ, μ)
-    idx = qp.idx
-    qp.rhs_c .= 0
-    # qp.rhs_c[idx.s] = (σ*μ .- (qp.Δ.s_a .* qp.Δ.z_a)) ./ qp.s
-    @. qp.rhs_c[idx.s] = (σ*μ - (qp.Δ.s_a * qp.Δ.z_a)) / qp.s
-    return nothing
-end
-function combine_deltas!(qp::QP)
-    @. qp.Δ.x = qp.Δ.x_a + qp.Δ.x_c
-    @. qp.Δ.s = qp.Δ.s_a + qp.Δ.s_c
-    @. qp.Δ.z = qp.Δ.z_a + qp.Δ.z_c
-    @. qp.Δ.y = qp.Δ.y_a + qp.Δ.y_c
-    return nothing
-end
-function update_vars!(qp::QP,α)
-    @. qp.x += α*qp.Δ.x
-    @. qp.s += α*qp.Δ.s
-    @. qp.z += α*qp.Δ.z
-    @. qp.y += α*qp.Δ.y
-    return nothing
-end
-struct INIT
-    LS::SparseMatrixCSC{Float64, Int64}
-    sol::Vector{Float64}
-    function INIT(nx,nz,ny)
-        Ni = idx.nx + idx.nz + idx.ny
-        new(spzeros(Ni,Ni),zeros(Ni))
-    end
-end
-function initialize!(qp::QP)
-    idx = qp.idx
-    init = qp.init
-    Ni = idx.nx + idx.nz + idx.ny
-
-    # idx_y = idx.y .- idx.ns
-    #
-    # A = spzeros(Ni, Ni)
-    # A[idx.x,idx.x] = qp.Q
-    # A[idx.x,idx.s] = qp.G'
-    # A[idx.x,idx_y] = qp.A'
-    # A[idx.s,idx.x] = qp.G
-    # A[idx.s,idx.s] = -I(idx.ns)
-    # A[idx_y,idx.x] = qp.A
-    #
-    # init = A\[-qp.q;qp.h;qp.b]
-    #
-    # qp.x .= init[idx.x]
-    # qp.z .= init[idx.s]
-    # qp.y .= init[idx_y]
-    #
-    #
-    # α_p = -minimum(-qp.z)
-    # if α_p < 0
-    #     qp.s .= -qp.z
-    # else
-    #     qp.s .= -qp.z .+ (1 + α_p)
-    # end
-    #
-    # α_d = -minimum(qp.z)
-    # if α_d >= 0
-    #     qp.z .= qp.z .+ (1 + α_d)
-    # end
-
-    return nothing
-end
 struct x_cache
     c1::Vector{Float64}
     c2::Vector{Float64}
@@ -179,7 +48,23 @@ struct IDX
     z::UnitRange{Int64}
     y::UnitRange{Int64}
 end
-
+struct INIT
+    LS::SparseMatrixCSC{Float64, Int64}
+    LS_F::SuiteSparse.UMFPACK.UmfpackLU{Float64, Int64}
+    sol::Vector{Float64}
+    idx_y::UnitRange{Int64}
+    function INIT(nx,nz,ny,idx,Q,G,A,idx_y)
+        Ni = nx + nz + ny
+        LS = spzeros(Ni, Ni)
+        LS[idx.x,idx.x] = Q
+        LS[idx.x,idx.s] = G'
+        LS[idx.x,idx_y] = A'
+        LS[idx.s,idx.x] = G
+        LS[idx.s,idx.s] = -I(idx.ns)
+        LS[idx_y,idx.x] = A
+        new(LS,lu(LS),zeros(Ni),idx_y)
+    end
+end
 struct DELTA
     # stores all the deltas (search directions)
 
@@ -277,12 +162,153 @@ struct QP
         Δ = DELTA(nx,ns,nz,ny)
 
         #initialization
-        init = INIT(nx,nz,ny)
+        init = INIT(nx,nz,ny,idx,Q,G,A,idx_y .- ns)
+        # nx,nz,ny,idx,Q,G,A,idx_y
 
         new(Q,q,A,b,G,h,x,s,z,y, KKT, rhs_a, rhs_c, p_a, p_c, idx, Δ,CACHE(nx,nz,ny),init)
     end
 
 
+end
+function rhs_kkt_a!(qp::QP)
+    idx = qp.idx
+    c = qp.cache
+
+    # qp.rhs_a[idx.x] = -(qp.A'*qp.y + qp.G'*qp.z + qp.Q*qp.x + qp.q)
+    mul!(c.x.c1,qp.A',qp.y)
+    mul!(c.x.c2,qp.G',qp.z)
+    mul!(c.x.c3,qp.Q,qp.x)
+    @. qp.rhs_a[idx.x] = -c.x.c1 - c.x.c2 - c.x.c3 - qp.q
+
+    # qp.rhs_a[idx.s] = -(qp.z)
+    @. qp.rhs_a[idx.s] = -qp.z
+
+    # qp.rhs_a[idx.z] = -(qp.G*qp.x + qp.s - qp.h)
+    mul!(c.z.c1,qp.G,qp.x)
+    @. qp.rhs_a[idx.z] = -c.z.c1 - qp.s - qp.h
+
+    # qp.rhs_a[idx.y] = -(qp.A*qp.x - qp.b)
+    mul!(c.y.c1,qp.A,qp.x)
+    @. qp.rhs_a[idx.y] = -c.y.c1 + qp.b
+    return nothing
+end
+function index_sol_a!(qp::QP)
+    # qp.Δ.x_a .= qp.p_a[qp.idx.x]
+    qp.Δ.x_a .= view(qp.p_a,qp.idx.x)
+
+    # qp.Δ.s_a .= qp.p_a[qp.idx.s]
+    qp.Δ.s_a .= view(qp.p_a,qp.idx.s)
+
+    # qp.Δ.z_a .= qp.p_a[qp.idx.z]
+    qp.Δ.z_a .= view(qp.p_a,qp.idx.z)
+
+    # qp.Δ.y_a .= qp.p_a[qp.idx.y]
+    qp.Δ.y_a .= view(qp.p_a,qp.idx.y)
+    return nothing
+end
+function index_sol_c!(qp::QP)
+    qp.Δ.x_c .= view(qp.p_c,qp.idx.x)
+    qp.Δ.s_c .= view(qp.p_c,qp.idx.s)
+    qp.Δ.z_c .= view(qp.p_c,qp.idx.z)
+    qp.Δ.y_c .= view(qp.p_c,qp.idx.y)
+    return nothing
+end
+function linesearch(x,dx)
+    # α = min(1.0, minimum([dx[i]<0 ? -x[i]/dx[i] : Inf for i = 1:length(x)]))
+    α = 1.0
+    for i = 1:length(x)
+        if dx[i]<0
+            α = min(α,-x[i]/dx[i])
+        end
+    end
+    return α
+end
+
+function centering_params(qp::QP)
+
+    μ = dot(qp.s,qp.z)/qp.idx.ns
+
+    α = min(linesearch(qp.s,qp.Δ.s_a), linesearch(qp.z,qp.Δ.z_a))
+
+    # σ = (dot(qp.s + α*qp.Δ.s_a, qp.z + α*qp.Δ.z_a)/dot(qp.s,qp.z))^3
+    @. qp.cache.z.c1 = qp.s + α*qp.Δ.s_a
+    @. qp.cache.z.c2 = qp.z + α*qp.Δ.z_a
+    σ = (dot(qp.cache.z.c1,qp.cache.z.c2)/dot(qp.s,qp.z))^3
+
+    return σ, μ
+end
+
+function rhs_kkt_c!(qp::QP, σ, μ)
+    idx = qp.idx
+    qp.rhs_c .= 0
+    # qp.rhs_c[idx.s] = (σ*μ .- (qp.Δ.s_a .* qp.Δ.z_a)) ./ qp.s
+    @. qp.rhs_c[idx.s] = (σ*μ - (qp.Δ.s_a * qp.Δ.z_a)) / qp.s
+    return nothing
+end
+function combine_deltas!(qp::QP)
+    @. qp.Δ.x = qp.Δ.x_a + qp.Δ.x_c
+    @. qp.Δ.s = qp.Δ.s_a + qp.Δ.s_c
+    @. qp.Δ.z = qp.Δ.z_a + qp.Δ.z_c
+    @. qp.Δ.y = qp.Δ.y_a + qp.Δ.y_c
+    return nothing
+end
+function update_vars!(qp::QP,α)
+    @. qp.x += α*qp.Δ.x
+    @. qp.s += α*qp.Δ.s
+    @. qp.z += α*qp.Δ.z
+    @. qp.y += α*qp.Δ.y
+    return nothing
+end
+function initialize!(qp::QP)
+    idx = qp.idx
+    init = qp.init
+    LS = qp.init.LS
+    # LS_F = qp.init.LS_F
+    sol = qp.init.sol
+    idx_y = qp.init.idx_y
+    # @. sol = [-qp.q;qp.h;qp.b]
+    @. sol[idx.x] = -qp.q
+    @. sol[idx.s] = qp.h
+    @. sol[idx_y] = qp.b
+
+    # ldiv!(LS,sol)
+    ldiv!(qp.init.LS_F,sol)
+    # view(sol,idx.x) = -qp.q
+    # Ni = idx.nx + idx.nz + idx.ny
+    # @show Ni
+    # idx_y = idx.y .- idx.ns
+    # @show idx_y
+    # @show qp.init.idx_y
+    #
+    # A = spzeros(Ni, Ni)
+    # A[idx.x,idx.x] = qp.Q
+    # LS[idx.x,idx.x] = qp.Q
+    # A[idx.x,idx.s] = qp.G'
+    # A[idx.x,idx_y] = qp.A'
+    # A[idx.s,idx.x] = qp.G
+    # A[idx.s,idx.s] = -I(idx.ns)
+    # A[idx_y,idx.x] = qp.A
+    #
+    # init = A\[-qp.q;qp.h;qp.b]
+    #
+    # qp.x .= init[idx.x]
+    # qp.z .= init[idx.s]
+    # qp.y .= init[idx_y]
+    #
+    #
+    # α_p = -minimum(-qp.z)
+    # if α_p < 0
+    #     qp.s .= -qp.z
+    # else
+    #     qp.s .= -qp.z .+ (1 + α_p)
+    # end
+    #
+    # α_d = -minimum(qp.z)
+    # if α_d >= 0
+    #     qp.z .= qp.z .+ (1 + α_d)
+    # end
+
+    return nothing
 end
 
 
@@ -325,6 +351,7 @@ function tt()
         # @btime combine_deltas!($qp::QP)
         # @btime update_vars!($qp::QP,$α)
         @btime initialize!($qp)
+        # initialize!(qp)
 
 
         # a = randn(10)

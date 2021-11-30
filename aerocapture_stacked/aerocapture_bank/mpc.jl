@@ -184,8 +184,8 @@ function eg_mpc_pdip(model::EntryVehicle,A,B,X,U,ϵ_f)
     up_dyneq = copy(low_dyneq)
     low_x0 = zeros(nx)
     up_x0 = zeros(nx)
-    up_tr = deg2rad(10)*ones(3*N)
-    low_tr = -deg2rad(10)*ones(3*N)
+    up_tr = deg2rad(20)*ones(3*N)
+    low_tr = -deg2rad(20)*ones(3*N)
 
     low_eq = [low_dyneq;low_x0]
     up_eq = [up_dyneq;up_x0]
