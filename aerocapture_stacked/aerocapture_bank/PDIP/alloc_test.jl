@@ -2,7 +2,8 @@ using LinearAlgebra
 using SparseArrays
 using BenchmarkTools
 using SuiteSparse
-
+include(joinpath(@__DIR__,"create_MPC.jl"))
+include(joinpath(@__DIR__,"lu_taylor.jl"))
 struct x_cache
     c1::Vector{Float64}
     c2::Vector{Float64}
@@ -50,7 +51,9 @@ struct IDX
 end
 struct INIT
     LS::SparseMatrixCSC{Float64, Int64}
-    LS_F::SuiteSparse.UMFPACK.UmfpackLU{Float64, Int64}
+    # LS_F::SuiteSparse.UMFPACK.UmfpackLU{Float64, Int64}
+    LS_solver::LUSparseSolver{Float64}
+    rhs::Vector{Float64}
     sol::Vector{Float64}
     idx_y::UnitRange{Int64}
     function INIT(nx,nz,ny,idx,Q,G,A,idx_y)
@@ -62,7 +65,7 @@ struct INIT
         LS[idx.s,idx.x] = G
         LS[idx.s,idx.s] = -I(idx.ns)
         LS[idx_y,idx.x] = A
-        new(LS,lu(LS),zeros(Ni),idx_y)
+        new(LS,lu_sparse_solver(LS),zeros(Ni),zeros(Ni),idx_y)
     end
 end
 struct DELTA
@@ -263,16 +266,25 @@ function initialize!(qp::QP)
     idx = qp.idx
     init = qp.init
     LS = qp.init.LS
+    solver = qp.init.LS_solver
     # LS_F = qp.init.LS_F
     sol = qp.init.sol
+    rhs = qp.init.rhs
     idx_y = qp.init.idx_y
     # @. sol = [-qp.q;qp.h;qp.b]
-    @. sol[idx.x] = -qp.q
-    @. sol[idx.s] = qp.h
-    @. sol[idx_y] = qp.b
+    @. rhs[idx.x] = -qp.q
+    @. rhs[idx.s] = qp.h
+    @. rhs[idx_y] = qp.b
 
+    # factorize KKT
+    factorize!(solver,LS)
+    linear_solve!(solver,sol,LS,rhs,fact = true)
+
+    @show norm(LS*sol - rhs)
+
+    # @show norm(sol - LS\rhs)
     # ldiv!(LS,sol)
-    ldiv!(qp.init.LS_F,sol)
+    # ldiv!(qp.init.LS_F,sol)
     # view(sol,idx.x) = -qp.q
     # Ni = idx.nx + idx.nz + idx.ny
     # @show Ni
@@ -313,26 +325,26 @@ end
 
 
 function tt()
-        n = 400
-        m_eq = 250
-        m_ineq = 150
+        # n = 400
+        # m_eq = 250
+        # m_ineq = 150
 
-        Q = randn(n,n);Q = Q'*Q
-        Q = sparse(Q)
-        q = randn(n)
-
-        A = sprand(m_eq,n,0.25)
-        b = randn(m_eq)
-
-        G = sprand(m_ineq,n,0.25)
-        h = randn(m_ineq)
-
+        # Q = randn(n,n);Q = Q'*Q
+        # Q = sparse(Q)
+        # q = randn(n)
+        #
+        # A = sprand(m_eq,n,0.25)
+        # b = randn(m_eq)
+        #
+        # G = sprand(m_ineq,n,0.25)
+        # h = randn(m_ineq)
+        Q,q,A,b,G,h = create_MPC()
         qp = QP(Q,q,A,b,G,h)
 
-        qp.x .= randn(n)
-        qp.s .= randn(m_ineq)
-        qp.z .= randn(m_ineq)
-        qp.y .= randn(m_eq)
+        qp.x .= randn(length(q))
+        qp.s .= randn(length(h))
+        qp.z .= randn(length(h))
+        qp.y .= randn(length(b))
 
         # @btime ff($qp)
         # @btime index_sol_c!($qp)
@@ -350,8 +362,8 @@ function tt()
 
         # @btime combine_deltas!($qp::QP)
         # @btime update_vars!($qp::QP,$α)
-        @btime initialize!($qp)
-        # initialize!(qp)
+        # @btime initialize!($qp)
+        initialize!(qp)
 
 
         # a = randn(10)

@@ -2,11 +2,23 @@ using LinearAlgebra
 using SuiteSparse
 using SparseArrays
 using BenchmarkTools
+"""
+    LU solver
+"""
+# function lu_solver(A::SparseMatrixCSC{T,Int}) where T
+#     A = Array(A)
+#     lu_solver(A)
+# end
+#
+# function linear_solve!(solver::LUSolver{T}, x::Vector{T}, A::SparseMatrixCSC{T,Int},
+#         b::Vector{T}; reg::T = 0.0, fact::Bool = true) where T
+#     linear_solve!(solver, x, Array(A), b, reg=reg, fact=fact)
+# end
 
 """
     LU (sparse) solver
 """
-mutable struct LUSparseSolver{T}
+mutable struct LUSparseSolver{T} #<: LinearSolver
     A::SparseMatrixCSC{T,Int}
     F::SuiteSparse.UMFPACK.UmfpackLU{T, Int}
     umf_ctrl::Vector{T}
@@ -89,45 +101,14 @@ end
 function ttt()
 
     n = 10
-    S = sprand(n,n,1.0)
+    A = sprand(n,n,1.0)
     b = randn(n)
-    x = randn(n)
+    x = zeros(n)
 
-    solver= lu_sparse_solver(S)
-    @show b
-    linear_solve!(solver,x,S,b)
+    solver = lu_sparse_solver(A)
+    linear_solve!(solver,x,A,b)
 
-    @show b
-    # n = 100
-    # LS = sprand(n,n,0.3) + I
-    # rhs = randn(n)
-    # sol = zeros(n)
-    #
-    # solver = lu_sparse_solver(LS)
-    #
-    # factorize!(solver,LS)
-    #
-    # linear_solve!(solver,sol,LS,rhs)
-    #
-    # @show norm(LS*sol - rhs)
-    #
-    # @show norm(sol)
-    # @show norm(rhs)
-    # @show norm(LS\rhs)
-
-    # # @btime linear_solve!($solver, $sol, $A, $b)
-    # # @btime $A\$b
-    # # @show norm(sol - A\b)
-    #
-    #
-    # A2 = 2*A
-    # # solver.A = copy(A2)
-    # @btime factorize!($solver,$A2)
-    # factorize!(solver,A2)
-    # @btime linear_solve!($solver,$sol,$A2,$b,fact = false)
-    # linear_solve!(solver,sol,A2,b,fact = false)
-    #
-    # @show norm(sol - A2\b)
+    @show x
     return nothing
 end
 
