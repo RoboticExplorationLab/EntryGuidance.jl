@@ -48,7 +48,8 @@ function processU(model::EntryVehicle,X,U)
 end
 
 function altitude(model,x)
-    return norm(x[1:3]) - model.evmodel.planet.R
+    # [norm(X[i][1:3])*1e3-model.evmodel.planet.R for i = 1:length(X)]
+    return norm(x[1:3])*model.dscale - model.evmodel.planet.R
 end
 function anglebetween(r1,r2)
     dp = dot(normalize(r1),normalize(r2))

@@ -128,13 +128,14 @@ X3 = vec_from_mat(X3m)
 mat"
 figure
 hold on
-title('Bank Angle')
-
+title('Bank Angle Control Plan')
 plot($t_vec, rad2deg($Xm(7,:)),'linewidth',4)
 xlabel('Time (s)')
+xlim([0,$t_vec(end)])
 ylabel('Bank Angle (degrees)')
-%set(gca,'FontSize',15)
+set(gca,'FontSize',14)
 hold off
+saveas(gcf,'bank.eps','epsc')
 "
 
 alt1 = [norm(X1[i][1:3])*1e3-model.evmodel.planet.R for i = 1:length(X)]
@@ -150,9 +151,11 @@ plot($t_vec, $alt2)
 plot($t_vec, $alt3)
 legend('1','2','3')
 xlabel('Time (s)')
+xlim([0,$t_vec(end)])
 ylabel('Altitude (km)')
-%set(gca,'FontSize',15)
+set(gca,'FontSize',14)
 hold off
+saveas(gcf,'alt.eps','epsc')
 "
 
 ϵ1 = X1m[8,:]
@@ -162,12 +165,18 @@ hold off
 mat"
 figure
 hold on
-title('epsilon')
+title('Specific Orbital Energy')
 plot($t_vec,$ϵ1)
 plot($t_vec,$ϵ2)
 plot($t_vec,$ϵ3)
 plot($t_vec,$ϵ_f*ones(length($t_vec),1),'r--')
+legend('1','2','3','target orbit')
+xlim([0,$t_vec(end)])
+xlabel('Time (s)')
+ylabel('Specific Orbital Energy')
+set(gca,'FontSize',14)
 hold off
+saveas(gcf,'eps.eps','epsc')
 "
 
 # e_hist = [peri_apo(model,X[i]) for i = 1:length(X)]

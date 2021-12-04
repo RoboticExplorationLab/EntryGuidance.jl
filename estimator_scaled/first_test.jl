@@ -49,8 +49,9 @@ kρ = 2.0
 x0 = [r0/dscale;v0/(dscale/tscale); σ0;kρ]
 
 # first rollout
-dt = 1/3600/tscale
-N = 150
+dt = 0.2/3600/tscale
+N = 500
+t_vec = (0:dt:((N-1)*dt))*3600
 X = NaN*[zeros(8) for i = 1:N]
 U = [zeros(1) for i = 1:N-1]
 Y = [zeros(7) for i = 1:N]
@@ -66,8 +67,8 @@ F[1] = chol(Matrix(Σ))
 Q = 1e-20*Matrix(I(8))
 # Q[8,8] = 1e-10
 # Q = diagm( [(.00005)^2*ones(3)/dscale; .00005^2*ones(3)/(dscale/tscale); (1e-5)^2;(1e-5)^2])
-# R = 1e-10*Matrix(I(6))
-R = diagm( [(.1)^2*ones(3)/dscale; (0.0002)^2*ones(3)/(dscale/tscale)])
+R = 1e-10*Matrix(I(6))
+# R = diagm( [(.1)^2*ones(3)/dscale; (0.0002)^2*ones(3)/(dscale/tscale)])
 
 # @show diag(Q)
 @show diag(R)
@@ -122,29 +123,41 @@ mat"
 figure
 hold on
 title('Position Error')
-plot($perr)
-plot($yperr)
-legend('EKF','Y')
-ylabel('km')
+plot($t_vec, $perr)
+plot($t_vec(1:end-1), $yperr)
+legend('SREKF','Measurement')
+xlabel('Time (s)')
+ylabel('Position Error (km)')
 hold off
+set(gca,'FontSize',14)
+saveas(gcf,'perr.eps','epsc')
 "
 mat"
 figure
 hold on
 title('Velocity Error')
-plot($verr)
-plot($yverr)
-legend('EKF','Y')
-ylabel('km/s')
+plot($t_vec,$verr)
+plot($t_vec(1:end-1),$yverr)
+legend('SREKF','Measurement')
+ylabel('Velocity Error (km/s)')
+xlabel('Time (s)')
 hold off
+set(gca,'FontSize',14)
+saveas(gcf,'verr.eps','epsc')
 "
 μm = mat_from_vec(μ)
 mat"
 figure
 hold on
-plot($Xm(8,:)','b')
-plot($μm(8,:)','r')
+plot($t_vec,$μm(8,:)')
+plot($t_vec,$Xm(8,:)')
+title('Atmospheric Correction Factor')
+legend('SREKF k rho','True k rho')
+xlabel('Time (s)')
+ylabel('k rho')
 hold off
+set(gca,'FontSize',14)
+saveas(gcf,'krho.eps','epsc')
 "
 
 return nothing
