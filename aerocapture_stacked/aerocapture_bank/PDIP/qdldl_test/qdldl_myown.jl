@@ -117,7 +117,7 @@ function qdldl(A::SparseMatrixCSC{Tv,Ti};
 
     #permute using symperm, producing a triu matrix to factor
     if perm != nothing
-        A = permute_symmetric(A, iperm)  #returns an upper triangular matrix
+        A = permute_symmetric!(A, iperm)  #returns an upper triangular matrix
     else
         if(!istriu(A))
             A = triu(A);
@@ -512,8 +512,7 @@ end
 
 
 "Given a sparse symmetric matrix `A` (with only upper triangular entries), return permuted sparse symmetric matrix `P` (only upper triangular) given the inverse permutation vector `iperm`."
-function permute_symmetric(A::SparseMatrixCSC{Tv, Ti}, iperm::AbstractVector{Ti}, Pr::AbstractVector{Ti} = zeros(Ti, nnz(A)), Pc::AbstractVector{Ti} = zeros(Ti, size(A, 1) + 1), Pv::AbstractVector{Tv} = zeros(Tv, nnz(A)) ) where {Tv <: AbstractFloat, Ti <: Integer}
-
+function permute_symmetric!(A::SparseMatrixCSC{Tv, Ti}, iperm::AbstractVector{Ti}, Pr::AbstractVector{Ti} = zeros(Ti, nnz(A)), Pc::AbstractVector{Ti} = zeros(Ti, size(A, 1) + 1), Pv::AbstractVector{Tv} = zeros(Tv, nnz(A)), num_entries::AbstractVector{Ti} = zeros(Ti,size(A,2)) ) where {Tv <: AbstractFloat, Ti <: Integer}
     # perform a number of argument checks
     m, n = size(A)
     m != n && throw(DimensionMismatch("Matrix A must be sparse and square"))
@@ -523,15 +522,16 @@ function permute_symmetric(A::SparseMatrixCSC{Tv, Ti}, iperm::AbstractVector{Ti}
     if n != length(iperm)
         throw(DimensionMismatch("Dimensions of sparse matrix A must equal the length of iperm, $((m,n)) != $(iperm)"))
     end
-    return _permute_symmetric(A, iperm, Pr, Pc, Pv)
+    return _permute_symmetric!(A, iperm, Pr, Pc, Pv, num_entries)
 end
 
 # the main function without extra argument checks
 # following the book: Timothy Davis - Direct Methods for Sparse Linear Systems
-function _permute_symmetric(A::SparseMatrixCSC{Tv, Ti}, iperm::AbstractVector{Ti}, Pr::AbstractVector{Ti}, Pc::AbstractVector{Ti}, Pv::AbstractVector{Tv}) where {Tv <: AbstractFloat, Ti <: Integer}
+function _permute_symmetric!(A::SparseMatrixCSC{Tv, Ti}, iperm::AbstractVector{Ti}, Pr::AbstractVector{Ti}, Pc::AbstractVector{Ti}, Pv::AbstractVector{Tv}, num_entries::AbstractVector{Ti}) where {Tv <: AbstractFloat, Ti <: Integer}
     # 1. count number of entries that each column of P will have
     n = size(A, 2)
-    num_entries = zeros(Ti, n)
+    # num_entries = zeros(Ti, n)
+    num_entries .= 0
     Ar = A.rowval
     Ac = A.colptr
     Av = A.nzval
