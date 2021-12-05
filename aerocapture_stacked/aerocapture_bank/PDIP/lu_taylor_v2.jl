@@ -106,9 +106,20 @@ function ttt()
     x = zeros(n)
 
     solver = lu_sparse_solver(A)
-    linear_solve!(solver,x,A,b)
+    factorize!(solver,A)
 
+    @. x = b
+    @btime ldiv!($solver.F,$x)
+
+    @show norm(x - A\b)
     @show x
+
+    # linear_solve!(solver,x,A,b)
+
+    # @show x
+
+    # F = lu(A)
+    # @show A\b
     return nothing
 end
 
