@@ -71,6 +71,12 @@ function _permute_symmetric2(A::SparseMatrixCSC{Tv, Ti}, iperm::AbstractVector{T
 end
 
 
+function update_A!(F::QDLDLFactorisation,A)
+    F.workspace.triuA .= _permute_symmetric2(A,F.iperm,F.workspace.Pr,F.workspace.Pc,F.workspace.Pv,F.workspace.num_entries)
+    factor!(F.workspace,F.logical)
+    return nothing
+end
+
 function tt()
 
 
@@ -104,41 +110,54 @@ function tt()
     #
     # @show norm(x2 - A2\b)
 
-    p = amd(A)
-    iperm = invperm(p)
+    # p = amd(A)
+    # iperm = invperm(p)
     # @show p
 
     x1 = zeros(n + m)
 
     @. x1 = b
 
-    F = qdldl(A;perm = p)
+    # F = qdldl(A;perm = p)
+    F = qdldl(A)
+    @show norm(A\b - F\b)
+
+    # @show F.perm
+    # @show p
+
+    A2 = pi*A
+    @btime update_A!($F,$A2)
+    @show norm(A2\b - F\b)
 
 
     # Pr = zeros(Int,nnz(A))
     # Pc = zeros(nnz(A))
     # Pv = zeros(nnz(A))
 
-    Pr = zeros(Int64, nnz(A))
-    Pc = zeros(Int64, size(A, 1) + 1)
-    Pv = zeros(Float64, nnz(A))
-
-    n = size(A,2)
-    num_entries = zeros(Int64, n)
+    # Pr = zeros(Int64, nnz(A))
+    # Pc = zeros(Int64, size(A, 1) + 1)
+    # Pv = zeros(Float64, nnz(A))
+    #
+    # n = size(A,2)
+    # num_entries = zeros(Int64, n)
 
     # @btime P = _permute_symmetric2($A,$iperm,$Pr,$Pc,$Pv,$num_entries)
-    _permute_symmetric2(A,iperm,Pr,Pc,Pv,num_entries)
+    # _permute_symmetric2(A,iperm,Pr,Pc,Pv,num_entries)
 
-    A2 = pi*A
-    F.workspace.triuA .= _permute_symmetric2(A2,iperm,Pr,Pc,Pv,num_entries)
-    factor!(F.workspace,false)
 
-    # x2 = F\b
-    x2 = zeros(length(b))
-    @. x2 = b
-    solve!(F,x2)
 
-    @show norm(x2 - A2\b)
+    # # working
+    # A2 = pi*A
+    # # F.workspace.triuA .= _permute_symmetric2(A2,iperm,Pr,Pc,Pv,num_entries)
+    # @btime $F.workspace.triuA .= _permute_symmetric2($A2,$iperm,$F.workspace.Pr,$F.workspace.Pc,$F.workspace.Pv,$F.workspace.num_entries)
+    # @btime factor!($F.workspace,false)
+    #
+    # # x2 = F\b
+    # x2 = zeros(length(b))
+    # @. x2 = b
+    # solve!(F,x2)
+    #
+    # @show norm(x2 - A2\b)
 
 
 

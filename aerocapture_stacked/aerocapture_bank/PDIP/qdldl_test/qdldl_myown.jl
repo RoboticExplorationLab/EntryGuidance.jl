@@ -30,6 +30,12 @@ struct QDLDLWorkspace{Tf<:AbstractFloat,Ti<:Integer}
 
     #The upper triangular matrix factorisation target
     triuA::SparseMatrixCSC{Tf,Ti}
+
+    # factorization workspace stuff
+    Pr::Vector{Ti}
+    Pc::Vector{Ti}
+    Pv::Vector{Tf}
+    num_entries::Vector{Ti}
 end
 
 function QDLDLWorkspace(triuA::SparseMatrixCSC{Tf,Ti}) where {Tf<:AbstractFloat,Ti<:Integer}
@@ -63,7 +69,15 @@ function QDLDLWorkspace(triuA::SparseMatrixCSC{Tf,Ti}) where {Tf<:AbstractFloat,
     #start since we haven't counted anything yet
     positive_inertia = Base.RefValue{Ti}(-1)
 
-    QDLDLWorkspace(etree,Lnz,iwork,bwork,fwork,Ln,Lp,Li,Lx,D,Dinv,positive_inertia,triuA)
+    # factorization workspace
+    Pr = zeros(Ti, nnz(triuA))
+    Pc = zeros(Ti, size(triuA, 1) + 1)
+    Pv = zeros(Tf, nnz(triuA))
+
+    n = size(triuA,2) # this may not be needed
+    num_entries = zeros(Ti, n)
+
+    QDLDLWorkspace(etree,Lnz,iwork,bwork,fwork,Ln,Lp,Li,Lx,D,Dinv,positive_inertia,triuA,Pr,Pc,Pv,num_entries)
 
 end
 
