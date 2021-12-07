@@ -71,7 +71,7 @@ using LinearAlgebra
 # end
 
 
-function update_A!(F::QDLDLFactorisation,A)
+function update_A!(F::QDLDLFactorisation, A::SparseMatrixCSC{Tv, Ti}) where {Tv <: AbstractFloat, Ti <: Integer}
     F.workspace.triuA .= _permute_symmetric!(A,F.iperm,F.workspace.Pr,F.workspace.Pc,F.workspace.Pv,F.workspace.num_entries)
     factor!(F.workspace,F.logical)
     return nothing

@@ -71,11 +71,11 @@ function QDLDLWorkspace(triuA::SparseMatrixCSC{Tf,Ti}) where {Tf<:AbstractFloat,
 
     # factorization workspace
     Pr = zeros(Ti, nnz(triuA))
-    Pc = zeros(Ti, size(triuA, 1) + 1)
+    Pc = zeros(Ti, Ln + 1)
     Pv = zeros(Tf, nnz(triuA))
 
-    n = size(triuA,2) # this may not be needed
-    num_entries = zeros(Ti, n)
+    # n = size(triuA,2) # this may not be needed
+    num_entries = zeros(Ti, Ln)
 
     QDLDLWorkspace(etree,Lnz,iwork,bwork,fwork,Ln,Lp,Li,Lx,D,Dinv,positive_inertia,triuA,Pr,Pc,Pv,num_entries)
 

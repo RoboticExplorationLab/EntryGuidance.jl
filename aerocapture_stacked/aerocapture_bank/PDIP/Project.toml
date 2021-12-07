@@ -1,0 +1,6 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+Convex = "f65535da-76fb-5f13-bab9-19810c17039a"
+ECOS = "e2685f51-7e38-5353-a97d-a921fd2c8199"
+Infiltrator = "5903a43b-9cc3-4c30-8d17-598619ec4e9b"
+QDLDL = "bfc457fd-c171-5ab7-bd9e-d5dbfc242d63"
