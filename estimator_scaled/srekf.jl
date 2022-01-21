@@ -5,7 +5,7 @@ using LinearAlgebra
 #     ΓR::UpperTriangular{Float64, Matrix{Float64}}
 # end
 function measurement(model,x)
-    return copy(x[1:6])
+    return copy(x[1:7])
 end
 function chol(A)
     # returns upper triangular Cholesky factorization of matrix A

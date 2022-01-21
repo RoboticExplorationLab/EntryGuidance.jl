@@ -43,7 +43,7 @@ function tt()
   A2,b2 = build_kkt(Q2, G2)
 
   # update factorisation in-place and test solution
-  update_A!(F,A2)
+  @btime update_A!(F,A2)
   @test norm(F\b2 - A2\b2) < 1e-10
 
   return nothing

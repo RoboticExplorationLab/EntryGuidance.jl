@@ -6,6 +6,7 @@ using Attitude
 using MATLAB
 using Infiltrator
 using ForwardDiff
+using Random
 # using Convex
 # using Mosek, MosekTools
 # using COSMO
@@ -22,7 +23,7 @@ include(joinpath(@__DIR__,"srekf.jl"))
 
 function first_test()
 
-
+Random.seed!(1234)
 alt0= 145.0
 γ0 = deg2rad(-15)
 V0 = 12.845*3600
@@ -45,7 +46,7 @@ v0 = V0*[sin(γ0), cos(γ0), 0.0]
 σ0 = deg2rad(30)
 # H =11.1
 # ρ0 = 2.0 # this gets multiplied by 1e7 at one point
-kρ = 2.0
+kρ = 1.74
 x0 = [r0/dscale;v0/(dscale/tscale); σ0;kρ]
 
 # first rollout
@@ -64,11 +65,11 @@ F = [zeros(8,8) for i = 1:N]
 Σ[8,8] = (1)^2
 F[1] = chol(Matrix(Σ))
 #t
-Q = 1e-20*Matrix(I(8))
+# Q = 1e-20*Matrix(I(8))
 # Q[8,8] = 1e-10
-# Q = diagm( [(.00005)^2*ones(3)/dscale; .00005^2*ones(3)/(dscale/tscale); (1e-5)^2;(1e-5)^2])
-R = 1e-10*Matrix(I(6))
-# R = diagm( [(.1)^2*ones(3)/dscale; (0.0002)^2*ones(3)/(dscale/tscale)])
+Q = diagm( [(.000005)^2*ones(3)/dscale; .000005^2*ones(3)/(dscale/tscale); (1e-10)^2;(1e-10)^2])
+# R = 1e-10*Matrix(I(6))
+R = diagm( [(.1)^2*ones(3)/dscale; (0.0002)^2*ones(3)/(dscale/tscale);1e-10])
 
 # @show diag(Q)
 @show diag(R)
@@ -78,7 +79,7 @@ end_idx = NaN
 for i = 1:(N-1)
     U[i] = [sin(i/10)/30]
     X[i+1] = rk4(model,X[i],U[i],dt)
-    Y[i+1] = measurement(model,X[i+1]) + kf_sys.ΓR*randn(6)
+    Y[i+1] = measurement(model,X[i+1]) + kf_sys.ΓR*randn(7)
 
     μ[i+1], F[i+1] = sqrkalman_filter(model, μ[i],F[i],U[i],Y[i+1],kf_sys)
 end
@@ -95,11 +96,11 @@ alt, dr, cr = postprocess(model::EntryVehicle,X,x0)
 
 alt_k, dr_k, cr_k = postprocess(model::EntryVehicle,μ,x0)
 
-perr = ([dscale*norm(X[i][1:3] - μ[i][1:3]) for i = 1:N])
-verr = ([(dscale/tscale)*norm(X[i][4:6] - μ[i][4:6]) for i = 1:N])
+perr = 1e3*([dscale*norm(X[i][1:3] - μ[i][1:3]) for i = 1:N])
+verr = 1e3*([(dscale/tscale)*norm(X[i][4:6] - μ[i][4:6]) for i = 1:N])
 
-yperr = ([dscale*norm(X[i][1:3] - Y[i][1:3]) for i = 2:N])
-yverr = ([(dscale/tscale)*norm(X[i][4:6] - Y[i][4:6]) for i = 2:N])
+yperr = 1e3*([dscale*norm(X[i][1:3] - Y[i][1:3]) for i = 2:N])
+yverr = 1e3*([(dscale/tscale)*norm(X[i][4:6] - Y[i][4:6]) for i = 2:N])
 # @infiltrate
 # error()
 # mat"
@@ -146,15 +147,25 @@ set(gca,'FontSize',14)
 saveas(gcf,'verr.eps','epsc')
 "
 μm = mat_from_vec(μ)
+σm = zeros(length(μ))
+# @infiltrate
+# error()
+for i = 1:length(μ)
+    Σ = F[i]'*F[i]
+    σm = sqrt(Σ[8,8])
+end
 mat"
 figure
 hold on
-plot($t_vec,$μm(8,:)')
-plot($t_vec,$Xm(8,:)')
+p1 = plot($t_vec,$μm(8,:)','b')
+p2= plot($t_vec,$μm(8,:)' + 3*$σm,'r--')
+plot($t_vec,$μm(8,:)' - 3*$σm,'r--')
+p3 = plot($t_vec,$Xm(8,:)','color',[0.9290, 0.6940, 0.1250])
 title('Atmospheric Correction Factor')
-legend('SREKF k rho','True k rho')
+legend([p1;p2;p3],'SREKF krho','3 sigma bounds','True krho','location','southeast')
 xlabel('Time (s)')
 ylabel('k rho')
+ylim([1.7 1.77])
 hold off
 set(gca,'FontSize',14)
 saveas(gcf,'krho.eps','epsc')
